@@ -35,18 +35,18 @@ void DspMap::initMap(ros::NodeHandle &nh)
     node_.param("particle_map/distance_gate",mp_.distance_gate_,5.0F);
     node_.param("particle_map/dynamic_cluster_max_center_height",mp_.dynamic_cluster_max_center_height_,5.0F);
     node_.param("particle_map/dynamic_cluster_max_point_num",mp_.dynamic_cluster_max_point_num_,200);
-    ROS_INFO("risk_thresh : %f",mp_.risk_thresh_);
-    ROS_INFO("local_update_range3d_x : %f",mp_.local_update_range3d_(0));
-    ROS_INFO("local_update_range3d_y : %f",mp_.local_update_range3d_(1));
-    ROS_INFO("local_update_range3d_z : %f",mp_.local_update_range3d_(2));
-    ROS_INFO("ODOM : %s",odom_topic.c_str());
-    ROS_INFO("POSE : %s",pose_topic.c_str());
-    ROS_INFO("LIDAR : %s",lidar_topic.c_str());
-    ROS_INFO("sigma_ob %f",mp_.sigma_ob);
-    ROS_INFO("new_born_particle_weight %f",mp_.new_born_particle_weight_);
-    ROS_INFO("new_born_particle_number_each_point %d",mp_.new_born_particle_number_each_point_);
-    ROS_INFO("voxel_filter_resolution %f",mp_.voxel_filter_resolution_);
-    ROS_INFO("occunpancy thresh :%f ",mp_.occupancy_thresh_);
+    // ROS_INFO("risk_thresh : %f",mp_.risk_thresh_);
+    // ROS_INFO("local_update_range3d_x : %f",mp_.local_update_range3d_(0));
+    // ROS_INFO("local_update_range3d_y : %f",mp_.local_update_range3d_(1));
+    // ROS_INFO("local_update_range3d_z : %f",mp_.local_update_range3d_(2));
+    // ROS_INFO("ODOM : %s",odom_topic.c_str());
+    // ROS_INFO("POSE : %s",pose_topic.c_str());
+    // ROS_INFO("LIDAR : %s",lidar_topic.c_str());
+    // ROS_INFO("sigma_ob %f",mp_.sigma_ob);
+    // ROS_INFO("new_born_particle_weight %f",mp_.new_born_particle_weight_);
+    // ROS_INFO("new_born_particle_number_each_point %d",mp_.new_born_particle_number_each_point_);
+    // ROS_INFO("voxel_filter_resolution %f",mp_.voxel_filter_resolution_);
+    // ROS_INFO("occunpancy thresh :%f ",mp_.occupancy_thresh_);
 
     
     /* map */
@@ -62,9 +62,9 @@ void DspMap::initMap(ros::NodeHandle &nh)
     mp_.half_fov_horizontal_rad_ = (float)mp_.half_fov_horizontal_ * M_PI / 180.f;
     mp_.half_fov_vertical_rad_ = (float)mp_.half_fov_vertical_ * M_PI / 180.f;
 
-    ROS_INFO("voxel_resolution_inv_ : %f",mp_.voxel_resolution_inv_);
-    ROS_INFO("half_fov_horizontal : %d",mp_.half_fov_horizontal_);
-    ROS_INFO("half_fov_vertical : %d",mp_.half_fov_vertical_);
+    // ROS_INFO("voxel_resolution_inv_ : %f",mp_.voxel_resolution_inv_);
+    // ROS_INFO("half_fov_horizontal : %d",mp_.half_fov_horizontal_);
+    // ROS_INFO("half_fov_vertical : %d",mp_.half_fov_vertical_);
     
     mp_.max_particle_num_in_voxel_ = 30;
     mp_.safe_particle_num_in_voxel_ = mp_.max_particle_num_in_voxel_ * 2;
@@ -84,9 +84,9 @@ void DspMap::initMap(ros::NodeHandle &nh)
     md_.occupancy_buffer_inflate_ = vector<uint16_t>(buffer_inf_size,0);
 
     /* voxel num && pyramid num */
-    ROS_INFO("ringbuffer 3i : %d, %d, %d",md_.ringbuffer_size3i_(0),md_.ringbuffer_size3i_(1),md_.ringbuffer_size3i_(2));
+    // ROS_INFO("ringbuffer 3i : %d, %d, %d",md_.ringbuffer_size3i_(0),md_.ringbuffer_size3i_(1),md_.ringbuffer_size3i_(2));
     mp_.voxel_num_ =  md_.ringbuffer_size3i_(0) * md_.ringbuffer_size3i_(1) * md_.ringbuffer_size3i_(2);
-    ROS_INFO("vovxels buffer size : %d, %d, %d", md_.ringbuffer_size3i_(0),md_.ringbuffer_size3i_(1),md_.ringbuffer_size3i_(2));
+    // ROS_INFO("vovxels buffer size : %d, %d, %d", md_.ringbuffer_size3i_(0),md_.ringbuffer_size3i_(1),md_.ringbuffer_size3i_(2));
     mp_.observation_pyramid_num_horizontal_ = (int)mp_.half_fov_horizontal_ * 2 / mp_.angle_resolution_;
     mp_.observation_pyramid_num_vertical_ = (int)mp_.half_fov_vertical_ * 2 / mp_.angle_resolution_;
     mp_.observation_pyramid_num_ = mp_.observation_pyramid_num_horizontal_ * mp_.observation_pyramid_num_vertical_;
@@ -135,13 +135,13 @@ void DspMap::initMap(ros::NodeHandle &nh)
     /* data vector initialization */
     md_.current_cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>());
     md_.input_cloud_with_velocity_.reset(new pcl::PointCloud<pcl::PointXYZINormal>());
-    ROS_INFO("mp_.guassian_random_num_ : %d",mp_.guassian_random_num_); 
-    ROS_INFO("mp_.standard_gaussian_pdf_num_ : %d",mp_.standard_gaussian_pdf_num_); 
+    // ROS_INFO("mp_.guassian_random_num_ : %d",mp_.guassian_random_num_); 
+    // ROS_INFO("mp_.standard_gaussian_pdf_num_ : %d",mp_.standard_gaussian_pdf_num_); 
 
     mp_.p_gaussian_randoms = vector<float>(mp_.guassian_random_num_);
     mp_.v_gaussian_randoms = vector<float>(mp_.guassian_random_num_);
     mp_.standard_gaussian_pdf = vector<float>(mp_.standard_gaussian_pdf_num_);
-    ROS_INFO("mp_.voxel_num_ : %d",mp_.voxel_num_); 
+    // ROS_INFO("mp_.voxel_num_ : %d",mp_.voxel_num_); 
     md_.voxels_with_particles = vector<vector<vector<float>>>(mp_.voxel_num_,vector<vector<float>>(mp_.safe_particle_num_in_voxel_,vector<float>(9,0.0)));
     md_.voxels_objects_number = vector<vector<float>>(mp_.voxel_num_,vector<float>(mp_.voxel_objects_number_dimension));
     md_.pyramids_in_fov = vector<vector<vector<int >>>(mp_.observation_pyramid_num_,vector<vector<int>>(mp_.safe_particle_num_in_pyramid_,vector<int>(3)));
@@ -152,16 +152,16 @@ void DspMap::initMap(ros::NodeHandle &nh)
     // md_.future_status = vector<vector<float>>(mp_.voxel_num_,vector<float>(mp_.prediction_time_));
     md_.future_status = vector<float>(mp_.voxel_num_);
     md_.input_points_ = vector<float>(mp_.max_point_num_*3);
-    ROS_INFO("input_points_ size: %zu", md_.input_points_.size());
-    ROS_INFO("cloud_in_current_view_rotated size: %zu", md_.current_cloud_->size());
-    ROS_INFO("input_cloud_with_velocity size: %zu", md_.input_cloud_with_velocity_->size());
-    ROS_INFO("p_gaussian_randoms size: %zu", mp_.p_gaussian_randoms.size());
-    ROS_INFO("v_gaussian_randoms size: %zu", mp_.v_gaussian_randoms.size());
-    ROS_INFO("future_status size: %zu", md_.future_status.size());
-    ROS_INFO("observation_pyramid_neighbours size: %zu", md_.observation_pyramid_neighbours.size());
-    ROS_INFO("pyramids_in_fov size: %zu", md_.pyramids_in_fov.size());
-    ROS_INFO("voxels_objects_number size: %zu", md_.voxels_objects_number.size());
-    ROS_INFO("voxels_with_particles size: %zu", md_.voxels_with_particles.size());
+    // ROS_INFO("input_points_ size: %zu", md_.input_points_.size());
+    // ROS_INFO("cloud_in_current_view_rotated size: %zu", md_.current_cloud_->size());
+    // ROS_INFO("input_cloud_with_velocity size: %zu", md_.input_cloud_with_velocity_->size());
+    // ROS_INFO("p_gaussian_randoms size: %zu", mp_.p_gaussian_randoms.size());
+    // ROS_INFO("v_gaussian_randoms size: %zu", mp_.v_gaussian_randoms.size());
+    // ROS_INFO("future_status size: %zu", md_.future_status.size());
+    // ROS_INFO("observation_pyramid_neighbours size: %zu", md_.observation_pyramid_neighbours.size());
+    // ROS_INFO("pyramids_in_fov size: %zu", md_.pyramids_in_fov.size());
+    // ROS_INFO("voxels_objects_number size: %zu", md_.voxels_objects_number.size());
+    // ROS_INFO("voxels_with_particles size: %zu", md_.voxels_with_particles.size());
 
     /* time && odom lidar received */
     md_.occ_need_update_ = false;
@@ -211,10 +211,10 @@ void DspMap::initMap(ros::NodeHandle &nh)
 
 
 
-    lidar_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_,lidar_topic,1));
+    lidar_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_,"lidar",1));
     if(mp_.pose_type_ == POSE_STAMPED)
     {
-        pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_,pose_topic,1));
+        pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_,"pose",1));
         sync_lidar_pose_.reset(
             new message_filters::Synchronizer<SyncPolicyLidarPose>(
                 SyncPolicyLidarPose(100),*lidar_sub_,*pose_sub_
@@ -224,7 +224,7 @@ void DspMap::initMap(ros::NodeHandle &nh)
     }
     else if(mp_.pose_type_ == ODOMETRY)
     {
-        odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_,odom_topic,1));
+        odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_,"odom",1));
         sync_lidar_odom_.reset(
             new message_filters::Synchronizer<SyncPolicyLidarOdom>(
                 SyncPolicyLidarOdom(100),*lidar_sub_,*odom_sub_
