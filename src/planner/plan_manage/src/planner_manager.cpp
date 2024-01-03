@@ -227,9 +227,9 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
     topo_prm_->findTopoPaths(start_pt, local_target_pt, start_pts, end_pts, graph,
                             raw_paths, filtered_paths, select_paths);
 
-    ROS_INFO("find topo paths finished !");
+    // ROS_INFO("find topo paths finished !");
     vector<vector<Eigen::Vector3d>> guide_pts;
-    ROS_INFO("topo path size : %d", select_paths.size());
+    // ROS_INFO("topo path size : %d", select_paths.size());
 
     vector<UniformBspline> topo_trajs;
     for(int i=0;i<select_paths.size();i++)
@@ -253,7 +253,8 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
         bool success = bspline_optimizer_rebound_[i]->BsplineOptimizeTrajRebound(temp_ctrl_pts, ts);
         if(success)
         {
-            visualization_->displayOptimalList(temp_ctrl_pts, i + 20);
+            // visualization_->displayOptimalList(temp_ctrl_pts, i + 20);
+            visualization_->displayTopoPathList(temp_ctrl_pts,i);
             topo_trajs.emplace_back(temp_ctrl_pts,3,ts);
         }
         else
@@ -261,18 +262,17 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
             ROS_ERROR("rebound fail");
         }
     }
-    ROS_INFO("optimize finished ! start sort ");
+    // ROS_INFO("optimize finished ! start sort ");
     if(topo_trajs.size() == 0)
     {
         ROS_WARN("no trajectory!");
         return false;
     }
     sortTopoTrajs(topo_trajs);
-    ROS_INFO("finish sort , start refine");
+    // ROS_INFO("finish sort , start refine");
 
     UniformBspline pos = topo_trajs[0];
     pos.setPhysicalLimits(pp_.max_vel_,pp_.max_acc_,pp_.feasibility_tolerance_);
-    ROS_INFO("here");
     double ratio;
     bool flag_step_2_success = true;
     if(!pos.checkFeasibility(ratio,false))
@@ -294,11 +294,11 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
         return false;
     }
 
-    ROS_INFO("finish refine, start update traj info");
+    // ROS_INFO("finish refine, start update traj info");
 
     updateTrajInfo(pos,ros::Time::now());
 
-    ROS_INFO("finish update !");
+    // ROS_INFO("finish update !");
 
     continuous_failures_count_ = 0;
 
@@ -405,17 +405,13 @@ bool PlannerManager::reboundTest(Eigen::Vector3d start_pt, Eigen::Vector3d start
         bool success = bspline_optimizer_rebound_[i]->BsplineOptimizeTrajRebound(ctrl_pts, ts);
         if(success)
         {
-            visualization_->displayOptimalList(ctrl_pts, i + 20);
+            // visualization_->displayOptimalList(ctrl_pts, i + 20);
         }
         else
         {
             ROS_ERROR("rebound fail");
         }
     }
-
-
-
-
 
     return true;
 

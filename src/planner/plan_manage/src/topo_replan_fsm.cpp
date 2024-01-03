@@ -480,8 +480,8 @@ bool TopoReplanFSM::callReboundReplan(bool flag_use_poly_init, bool flag_randomP
         }
 
         bspline_pub_.publish(bspline);
-        ROS_INFO("publish bspline");
-        visualization_->displayOptimalList(info->position_traj_.getControlPoint(), 0);
+        // ROS_INFO("publish bspline");
+        // visualization_->displayOptimalList(info->position_traj_.getControlPoint(), 0);
     }
 
     return plan_success;

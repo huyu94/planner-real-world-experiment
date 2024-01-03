@@ -13,6 +13,20 @@ using std::endl;
     optimal_list_pub = nh.advertise<visualization_msgs::Marker>("optimal_list", 2);
     a_star_list_pub = nh.advertise<visualization_msgs::Marker>("a_star_list", 20);
     control_point_pub = nh.advertise<visualization_msgs::Marker>("control_point", 2);
+    topo_list_pub = nh.advertise<visualization_msgs::Marker>("topo_list",5);
+    
+    colorMap = {
+      Eigen::Vector4d(1, 0, 0, 1), // Red
+      Eigen::Vector4d(0, 1, 0, 1), // Green
+      Eigen::Vector4d(0, 0, 1, 1), // Blue
+      Eigen::Vector4d(1, 1, 0, 1), // Yellow
+      Eigen::Vector4d(1, 0, 1, 1), // Magenta
+      Eigen::Vector4d(0, 1, 1, 1), // Cyan
+      Eigen::Vector4d(0.5, 0.5, 0.5, 1), // Grey
+      Eigen::Vector4d(1, 0.5, 0, 1), // Orange
+      Eigen::Vector4d(0.5, 0, 1, 1), // Purple
+      Eigen::Vector4d(0, 0.5, 0.5, 1) // Teal
+    };
   }
 
   // // real ids used: {id, id+1000}
@@ -222,6 +236,31 @@ using std::endl;
     Eigen::Vector4d color(1, 0, 0, 1);
     displayMarkerList(optimal_list_pub, list, 0.15, color, id);
   }
+
+  void PlanningVisualization::displayTopoPathList(Eigen::MatrixXd topo_pts, int id)
+  {
+    if(topo_list_pub.getNumSubscribers() == 0)
+    {
+      return ;
+    }
+
+    vector<Eigen::Vector3d> list;
+    for(int i = 0; i < topo_pts.cols(); i++)
+    {
+      Eigen::Vector3d pt = topo_pts.col(i).transpose();
+      list.push_back(pt);
+    }
+    if(id < 0 || id >= colorMap.size())
+    {
+      cout << "Error: id out of range in displayTopoPathList()" << endl;
+      return ;
+    }
+
+    displayMarkerList(topo_list_pub,list,0.15,colorMap[id],id);
+  }
+
+
+
 
   void PlanningVisualization::displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id /* = Eigen::Vector4d(0.5,0.5,0,1)*/)
   {

@@ -23,10 +23,14 @@ using std::vector;
     ros::Publisher global_list_pub;
     ros::Publisher init_list_pub;
     ros::Publisher optimal_list_pub;
+    ros::Publisher topo_list_pub;
     ros::Publisher a_star_list_pub;
     ros::Publisher guide_vector_pub;
     ros::Publisher intermediate_state_pub;
     ros::Publisher control_point_pub;
+
+    std::vector<Eigen::Vector4d> colorMap;
+
 
   public:
     PlanningVisualization(/* args */) {}
@@ -50,6 +54,11 @@ using std::vector;
     void displayArrowList(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
     void displayControlPoints(const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
     void displayBestPathList(Eigen::MatrixXd best_pts, int id);
+
+    void displayTopoPathList(Eigen::MatrixXd topo_pts, int id);
+
+    // void drawTopoGraph(list<GraphNode::Ptr>& graph, double point size, double line_width,
+    //                     const Eigen::Vector4d& color1, const )
     // void displayIntermediateState(ros::Publisher& intermediate_pub, ego_planner::BsplineOptimizer::Ptr optimizer, double sleep_time, const int start_iteration);
     // void displayNewArrow(ros::Publisher& guide_vector_pub, ego_planner::BsplineOptimizer::Ptr optimizer);
   };

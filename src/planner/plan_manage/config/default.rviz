@@ -118,7 +118,7 @@ Visualization Manager:
               Marker Topic: /drone_0_node/goal_point
               Name: goal_point
               Namespaces:
-                {}
+                "": true
               Queue Size: 100
               Value: true
             - Class: rviz/Marker
@@ -126,7 +126,7 @@ Visualization Manager:
               Marker Topic: /drone_0_node/global_list
               Name: global_path
               Namespaces:
-                {}
+                "": true
               Queue Size: 100
               Value: true
             - Class: rviz/Marker
@@ -151,6 +151,14 @@ Visualization Manager:
               Name: InitTraj
               Namespaces:
                 {}
+              Queue Size: 100
+              Value: true
+            - Class: rviz/Marker
+              Enabled: true
+              Marker Topic: /drone_0_node/topo_list
+              Name: TopoTraj
+              Namespaces:
+                "": true
               Queue Size: 100
               Value: true
             - Class: rviz/Marker
@@ -220,8 +228,8 @@ Visualization Manager:
             - Alpha: 1
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
-                Max Value: 3.5
-                Min Value: 0.5
+                Max Value: 2.299999952316284
+                Min Value: 0.10000000149011612
                 Value: true
               Axis: Z
               Channel Name: intensity
@@ -329,14 +337,6 @@ Visualization Manager:
       Topic: /particle_map/pose
       Unreliable: false
       Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /topo_test/goal_point
-      Name: Marker
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -372,8 +372,8 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -9.44242000579834
-        Y: -0.9022483825683594
+        X: -3.903883457183838
+        Y: -0.0659024715423584
         Z: 5.038808012614027e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
@@ -453,7 +453,7 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1866
-  X: 1823
-  Y: 1264
+  X: 561
+  Y: 271
   depth:
     collapsed: false
