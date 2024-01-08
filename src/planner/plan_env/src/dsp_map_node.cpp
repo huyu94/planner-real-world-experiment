@@ -1,15 +1,14 @@
 #include <iostream>
 #include "plan_env/dsp_map.h"
-#include <plan_env/particle_map.hpp>
 
 using namespace std;
-using namespace ego_planner;
+
 int main(int argc,char** argv)
 {
     ros::init(argc,argv,"test_dspmap");
     ros::NodeHandle nh("~");
-    ParticleMap::Ptr map;
-    map.reset(new ParticleMap);
+    DspMap::Ptr map;
+    map.reset(new DspMap);
     map->initMap(nh);
 
     // DspMap::Ptr mymap;

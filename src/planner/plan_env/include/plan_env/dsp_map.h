@@ -104,9 +104,11 @@ struct MappingParamters
     // float half_angle_resolution_rad_; //角度分辨率的一一半-弧度制
     const float one_degree_rad_ = M_PI / 180;
     int half_fov_horizontal_;
-    int half_fov_vertical_;
-    float half_fov_horizontal_rad_; // 水平方向的视场角的一半-弧度制
-    float half_fov_vertical_rad_;  // 垂直方向的视场角的一半-弧度制
+    // int half_fov_vertical_;
+    int fov_vertical_lowbound_;
+    int fov_vertical_upbound_;
+    float fov_vertical_lowbound_rad_;
+    float fov_vertical_upbound_rad_;
 
 
     /* voxel subspace  */ 
@@ -148,7 +150,7 @@ struct MappingParamters
     /* map upadte parameters */
     double position_prediction_stddev; //位置估计方差
     double velocity_prediction_stddev; //速度估计方差
-    float kappa;
+    double kappa;
     double sigma_ob;
     double P_detection; //被检测到的概率
     double new_born_particle_weight_;
@@ -177,6 +179,7 @@ struct MappingParamters
     /* occupancy param */
     double occupancy_thresh_;  // 占据阈值
     double risk_thresh_; // 风险阈值
+    double acc_future_risk_thresh_; // 时间累积风险阈值
 
 };
 
@@ -326,7 +329,7 @@ private:
         ODOMETRY = 2,
         INVALID_IDX = -10000
     };
-    void publishPose();
+    void publishPoseAndFov();
     void publishMap();
     void publishFutureStatus();
     void publishMapInflate();
@@ -395,7 +398,7 @@ private:
     SynchronizerLidarPose sync_lidar_pose_;
 
     ros::Subscriber indep_cloud_sub_, indep_odom_sub_, indep_pose_sub_;
-    ros::Publisher map_pub_, map_inflate_pub_,map_future_pub_,pose_pub_,aabb_pub_,cloud_pub_,particle_pub_;
+    ros::Publisher map_pub_, map_inflate_pub_,map_future_pub_,pose_pub_,aabb_pub_,cloud_pub_,particle_pub_, sensor_fov_pub_;
     ros::Timer occ_update_timer_, vis_timer_;
 
     uniform_real_distribution<double> rand_noise_;

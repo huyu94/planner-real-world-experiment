@@ -60,9 +60,9 @@ void TopoPRM::findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end,
 
     start_pts_ = start_pts;
     end_pts_ = end_pts;
-
+    
     graph = createGraph(start, end);
-    ROS_INFO("create graph finished");
+    // ROS_INFO("create graph finished");
     graph_time = (ros::Time::now() - t1).toSec();
     cout << "create graph: " << (t2 - t1).toSec() << endl;
     /* ---------- search paths in the graph ---------- */
@@ -164,12 +164,13 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
             /* try adding new connection between two guard */
             // vector<pair<GraphNode::Ptr, GraphNode::Ptr>> sort_guards =
             // sortVisibGuard(visib_guards);
-            // 尝试连接
+            // 尝试连接            ROS_INFO("end by 2");
             bool need_connect = needConnection(visib_guards[0], visib_guards[1], pt);
             if (!need_connect) { // 连接未成功就终止
                 sample_time += (ros::Time::now() - t1).toSec();
                 continue;
             }
+
             // new useful connection needed, add new connector， 定义为connector
             GraphNode::Ptr connector = GraphNode::Ptr(new GraphNode(pt, GraphNode::Connector, ++node_id));
             graph_.push_back(connector);
@@ -181,7 +182,6 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
             connector->neighbors_.push_back(visib_guards[0]);
             connector->neighbors_.push_back(visib_guards[1]);
         }
-
         sample_time += (ros::Time::now() - t1).toSec();
     }
       /* print record */

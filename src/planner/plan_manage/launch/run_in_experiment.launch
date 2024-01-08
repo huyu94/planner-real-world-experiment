@@ -1,71 +1,47 @@
 <launch>
-    <!-- size of map, change the size inflate x, y, z according to your application -->
-    <arg name="map_size_x" value="20.0"/>
-    <arg name="map_size_y" value="10.0"/>
-    <arg name="map_size_z" value="5.0"/>
-    <arg name="init_x" value="-10.0"/>
-    <arg name="init_y" value="-0.0"/>
-    <arg name="init_z" value="0.5"/>
-    <arg name="target_x" value="20.0"/>
-    <arg name="target_y" value="9.0"/>
-    <arg name="target_z" value="1"/>
-
-    <arg name="drone_id" value="0"/>
-
-    <!-- topic of your odometry such as VIO or LIO -->
-    <arg name="odom_topic" value="visual_slam/odom"/>
-
     <!-- number of moving objects -->
     <arg name="obj_num" value="10" />
+    <arg name="drone_id" value="0"/>
+
+    <arg name="map_size_x" value="20"/>
+    <arg name="map_size_y" value="10"/>
+    <arg name="map_size_z" value="4.0"/>
+    <!-- <arg name="odom_topic" value="/robot/dlio/odom_node/odom"/> -->
+    <!-- <arg name="cloud_topic" value="/robot/dlio/odom_node/pointcloud/deskewed"/> -->
+    <arg name="odom_topic" value="/Odometry"/>
+    <arg name="cloud_topic" value="/cloud_registered"/>
 
     <!-- main algorithm params -->
-    <include file="$(find plan_manage)/launch/advanced_param.xml">
-
+    <include file="$(find plan_manage)/launch/include/real_world_planner.xml">
         <arg name="drone_id" value="$(arg drone_id)"/>
-
         <arg name="map_size_x_" value="$(arg map_size_x)"/>
         <arg name="map_size_y_" value="$(arg map_size_y)"/>
         <arg name="map_size_z_" value="$(arg map_size_z)"/>
+        
         <arg name="odometry_topic" value="$(arg odom_topic)"/>
-
-        <arg name="obj_num_set" value="$(arg obj_num)" />
-
-        <!-- camera pose: transform of camera frame in the world frame -->
-        <!-- depth topic: depth image, 640x480 by default -->
-        <!-- don't set cloud_topic if you already set these ones! -->
-        <arg name="camera_pose_topic" value="pcl_render_node/camera_pose"/>
-        <arg name="depth_topic" value="pcl_render_node/depth"/>
-
-        <!-- topic of point cloud measurement, such as from LIDAR  -->
-        <!-- don't set camera pose and depth, if you already set this one! -->
-        <arg name="cloud_topic" value="pcl_render_node/cloud"/>
-
-        <!-- intrinsic params of the depth camera -->
-        <arg name="cx" value="321.04638671875"/>
-        <arg name="cy" value="243.44969177246094"/>
-        <arg name="fx" value="387.229248046875"/>
-        <arg name="fy" value="387.229248046875"/>
+        <arg name="cloud_topic" value="$(arg cloud_topic)"/>
 
         <!-- maximum velocity and acceleration the drone will reach -->
         <arg name="max_vel" value="2.0" />
         <arg name="max_acc" value="3.0" />
 
         <!--always set to 1.5 times grater than sensing horizen-->
-        <arg name="planning_horizon" value="4.5" />
+        <arg name="planning_horizon" value="4.5" /> 
 
-        <arg name="use_distinctive_trajs" value="true" />
+        <!-- topo replan -->
+        <arg name="use_distinctive_trajs" value="false" />
 
         <!-- 1: use 2D Nav Goal to select goal  -->
         <!-- 2: use global waypoints below  -->
         <arg name="flight_type" value="1" />
-
+        
         <!-- global waypoints -->
         <!-- It generates a piecewise min-snap traj passing all waypoints -->
         <arg name="point_num" value="1" />
 
-        <arg name="point0_x" value="$(arg target_x)" />
-        <arg name="point0_y" value="$(arg target_y)" />
-        <arg name="point0_z" value="$(arg target_z)" />
+        <arg name="point0_x" value="0" />
+        <arg name="point0_y" value="0" />
+        <arg name="point0_z" value="0" />
 
         <arg name="point1_x" value="0.0" />
         <arg name="point1_y" value="15.0" />
@@ -84,28 +60,16 @@
         <arg name="point4_z" value="1.0" />
 
     </include>
-
-
-
     <!-- trajectory server -->
     <node pkg="plan_manage" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
-        <remap from="position_cmd" to="drone_$(arg drone_id)_planning/pos_cmd"/>
-        <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline"/>
+        <remap from="~position_cmd" to="/position_cmd" />
+        <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline" />
 
-        <param name="traj_server/time_forward" value="1.0" type="double"/>
+        <param name="traj_server/time_forward" value="1.0" type="double" />
     </node>
 
-    <!--node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
-    <remap from="~odom" to="$(arg odom_topic)"/>        
-    <remap from="~goal" to="/move_base_simple/goal"/>
-    <remap from="~traj_start_trigger" to="/traj_start_trigger" />
-    <param name="waypoint_type" value="manual-lonely-waypoint"/>    
-  </node-->
-
-    <!-- 不用simulator, 仅用odom_visualization -->
-
     <node pkg="odom_visualization" name="drone_$(arg drone_id)_odom_visualization" type="odom_visualization" output="screen">
-        <remap from="~odom" to="drone_$(arg drone_id)_visual_slam/odom"/>
+        <remap from="~odom" to="/Odometry"/>
         <param name="color/a" value="1.0"/>
         <param name="color/r" value="0.0"/>
         <param name="color/g" value="0.0"/>
@@ -115,8 +79,6 @@
         <param name="tf45" value="false"/>
         <param name="drone_id" value="drone_id"/>
     </node>
-
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find plan_manage)/launch/default.rviz" required="true" />
 
 
 </launch>

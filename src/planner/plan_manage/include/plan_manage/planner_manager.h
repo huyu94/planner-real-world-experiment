@@ -66,43 +66,6 @@ public:
     DspMap::Ptr dsp_map_;
 
 
-
-    // topological paths
-
-    // int topo_path_num_;
-    // struct TopoTraj
-    // {
-
-    //     vector<Eigen::Vector3d> topo_select_paths_;
-    //     vector<Eigen::Vector3d> point_set_;
-    //     vector<Eigen::Vector3d> start_end_derivatives_;
-    //     vector<vector<Eigen::Vector3d>> a_star_pathes_;
-    //     double ts_;
-    //     Eigen::MatrixXd ctrl_pts_;
-    //     UniformBspline spline_;
-    //     BsplineOptimizer::Ptr optimizer_;
-
-    //     TopoTraj(){}
-
-    //     void clear()
-    //     {
-    //         topo_select_paths_.clear();
-    //         point_set_.clear();
-    //         start_end_derivatives_.clear();
-    //         a_star_pathes_.clear();
-    //         ts_ = 0;
-    //     }
-
-
-    // };
-
-
-    // vector<TopoTraj> topo_traj_set_;
-    // vector<vector<Eigen::Vector3d>> point_sets_;
-    // vector<vector<Eigen::Vector3d>> start_end_derivatives_;
-    // vector<double> tss_;
-    // vector<Eigen::MatrixXd> ctrl_pts_s_;
-    // vector<vector<vector<Eigen::Vector3d>>> a_star_pathes_;
     
     int best_traj_id_;
     

@@ -57,10 +57,12 @@ target_link_libraries( plan_env
     ${OpenCV_LIBS}
     )  
 
-# add_executable(dsp_map_node
-#     src/dsp_map_node.cpp 
-#     src/particle_map.cpp
-# )
-# target_link_libraries(dsp_map_node 
-#     ${catkin_LIBRARIES}
-#     )
+add_executable(dsp_map_node
+    src/dsp_map_node.cpp 
+    src/dsp_map.cpp
+)
+target_link_libraries(dsp_map_node 
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${OpenCV_LIBS}
+    )

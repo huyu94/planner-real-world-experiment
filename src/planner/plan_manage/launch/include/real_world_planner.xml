@@ -41,7 +41,7 @@
     <node pkg="plan_manage" name="drone_$(arg drone_id)_node" type="planner_node"
         output="screen">
 
-        <remap from="/odom_world" to="/drone_$(arg drone_id)_$(arg odometry_topic)" />
+        <remap from="/odom_world" to="/Odometry" />
         <remap from="/planning/bspline" to="/drone_$(arg drone_id)_planning/bspline" />
         <remap from="/planning/data_display" to="/drone_$(arg drone_id)_planning/data_display" />
         <!-- <remap from="~planning/broadcast_bspline_from_planner" to="/broadcast_bspline" /> -->
@@ -96,11 +96,13 @@
         <param name="particle_map/virtual_ceil" type="double" value="10"/>
         <param name="particle_map/virtual_ground" type="double" value="0"/>
         <param name="particle_map/half_fov_horizontal" type="double" value="180"/>
-        <param name="particle_map/half_fov_vertical" type="double" value="50"/>
-        <remap from="~lidar" to="/dynamic_map_generator/local_cloud"/>
-        <remap from="~odom" to="/drone_$(arg drone_id)_odometry"/>
-        <param name="particle_map/occupancy_thresh" value="0.5" type="double"/>
-        <param name="particle_map/risk_thresh" value = "0.05" type="double"/>
+        <param name="particle_map/fov_vertical_lowbound" type="int" value="-50"/>
+        <param name="particle_map/fov_vertical_upbound" type="int" value="50"/>
+        <remap from="~lidar" to="$(arg cloud_topic)"/>
+        <remap from="~odom" to="$(arg odometry_topic)"/>
+        <param name="particle_map/occupancy_thresh" value="0.6" type="double"/>
+        <param name="particle_map/risk_thresh" value = "0.8" type="double"/>
+        <!-- <param name="particle_map/acc_future_risk_thresh" value = "0.8" type="double"/> -->
         <param name="particle_map/enable_future_prediction" value="false" type="bool"/>
         <param name="particle_map/prediction_z_height" value="0.2" type="double"/>
         <param name="particle_map/prediction_y_offset" value="25" type="double"/>
@@ -112,7 +114,9 @@
         <param name="particle_map/new_born_particle_number_each_point" type="int" value="15"/>
         <param name="particle_map/voxel_filter_resolution" type="double" value="0.2"/>
         <param name="particle_map/sigma_ob" type="double" value="0.1"/>
-        
+        <param name="particle_map/kappa" type="double" value="0.1"/>
+        <param name="particle_map/P_detection" type="double" value="0.8"/>
+
         <!-- planner manager -->
         <param name="manager/max_vel" value="$(arg max_vel)" type="double" />
         <param name="manager/max_acc" value="$(arg max_acc)" type="double" />

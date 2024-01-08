@@ -22,6 +22,9 @@ int main(int argc, char **argv)
   
   // ros::MultiThreadedSpinner spinner(4);
   // spinner.spin();
+  // ros::AsyncSpinner async_spinner(4);
+  // async_spinner.start();
+  // ros::waitForShutdown();
   ros::spin();
 
   return 0;

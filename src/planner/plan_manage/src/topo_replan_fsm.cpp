@@ -13,7 +13,7 @@ void TopoReplanFSM::init(ros::NodeHandle &nh)
     nh.param("fsm/thresh_no_replan", no_replan_thresh_, -1.0);
     nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
     nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0);
-    nh.param("fsm/traj_risk_thresh", traj_risk_thresh_, -1.0);
+    // nh.param("fsm/traj_risk_thresh", traj_risk_thresh_, -1.0);
     nh.param("fsm/emergency_time_", emergency_time_, 1.0);
     nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
     nh.param("fsm/waypoint_num", waypoints_num_, -1);
@@ -399,7 +399,7 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
     {
         return;
     }
-
+    static int fail_times = 0;
     /* ---------- check trajectory ---------- */
     constexpr double time_step = 0.01;
     double t_cur = (ros::Time::now() - info->start_time_).toSec();
@@ -421,17 +421,20 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
             else
             {
                 /* 不紧急停止，直接重新规划轨迹 */
-                // if (t - t_cur < emergency_time_) // 0.8s of emergency time
-                // {
-                //     ROS_WARN("Suddenly discovered obstacles. emergency stop! time=%f", t - t_cur);
-                //     changeFSMExecState(EMERGENCY_STOP, "SAFETY");
-                // }
-                // else
-                // {
-                    //ROS_WARN("current traj in collision, replan.");
-                changeFSMExecState(REPLAN_TRAJ, "SAFETY");
-                return ;
-                // }
+                if (t - t_cur < emergency_time_) // 0.8s of emergency time
+                {
+                    ROS_WARN("Suddenly discovered obstacles. emergency stop! time=%f", t - t_cur);
+                    fail_times ++;
+                    ROS_ERROR("fail_times: %d",fail_times);
+                    changeFSMExecState(EMERGENCY_STOP, "SAFETY");
+                    
+                }
+                else
+                {
+                    ROS_WARN("current traj in collision, replan.");
+                    changeFSMExecState(REPLAN_TRAJ, "SAFETY");
+                    return ;
+                }
             }
             break;
         }
