@@ -2,7 +2,7 @@
 # ⭐⭐⭐  Set parameters carefully for satisfied performance!   ⭐⭐⭐ #
 #########################################################################
 
-mass        : 1.2 # kg 
+mass        : 2.5 # kg 
 gra         : 9.81 
 pose_solver : 1     # 0:From ZhepeiWang (drag & less singular) 1:From ZhepeiWang, 2:From rotor-drag    
 ctrl_freq_max   : 100.0
@@ -13,9 +13,9 @@ low_voltage: 13.2 # 4S battery
 
 rc_reverse: # *
     roll: false
-    pitch: false
+    pitch: true
     yaw: false
-    throttle: false
+    throttle: true
 
 auto_takeoff_land:
     enable: true
@@ -25,7 +25,7 @@ auto_takeoff_land:
     takeoff_land_speed: 0.3 # m/s
 
 thrust_model: # The model that maps thrust signal u(0~1) to real thrust force F(Unit:N): F=K1*Voltage^K2*(K3*u^2+(1-K3)*u). 
-    print_value: false # display the value of “thr_scale_compensate” or “hover_percentage” during thrust model estimating.
+    print_value: true # display the value of “thr_scale_compensate” or “hover_percentage” during thrust model estimating.
     accurate_thrust_model: false  # This can always enabled if don't require accurate control performance :-)
     # accurate thrust mapping parameters
     K1: 0.7583 # Needs precise calibration!
