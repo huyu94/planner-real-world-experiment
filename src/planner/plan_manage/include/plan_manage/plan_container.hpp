@@ -192,7 +192,9 @@ struct PlanParameters
     double ctrl_pt_dist;                    // distance between adjacient B-spline control points
     double feasibility_tolerance_;          // permitted ratio of vel/acc exceeding limits
     double planning_horizen_;
-    double risk_tolerance_;                 // risk thresh 
+    double risk_weight_;
+    double traj_risk_thresh_;                    // risk weight to modify traj risk
+    bool optimize_parallel_;
     int topo_max_num_;                          // number of topo trajectory
     int drone_id;                           // single drone: drone_id <= -1, swarm: drone_id >= 0
 

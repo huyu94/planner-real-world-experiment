@@ -16,7 +16,7 @@
 #include <traj_utils/DataDisp.h>
 #include <plan_manage/planner_manager.h>
 #include <traj_utils/planning_visualization.h>
-
+#include <mutex>
 using std::vector;
 
 class TopoReplanFSM
@@ -51,7 +51,6 @@ private:
     double planning_horizen_, planning_horizen_time_;
     double emergency_time_;
     bool flag_realworld_experiment_;
-    double traj_risk_thresh_;
 
     /* planning data */
     bool have_trigger_, have_target_, have_odom_, have_new_target_;
@@ -68,8 +67,10 @@ private:
     std::vector<Eigen::Vector3d> wps_;
     int current_wp_;
 
-
     bool flag_escape_emergency_;
+
+    // mutex
+    std::mutex mutex_call_rebound_replan_;
 
     /* ROS utils */
     ros::NodeHandle node_;

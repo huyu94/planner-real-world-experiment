@@ -13,7 +13,6 @@ void TopoReplanFSM::init(ros::NodeHandle &nh)
     nh.param("fsm/thresh_no_replan", no_replan_thresh_, -1.0);
     nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
     nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0);
-    // nh.param("fsm/traj_risk_thresh", traj_risk_thresh_, -1.0);
     nh.param("fsm/emergency_time_", emergency_time_, 1.0);
     nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
     nh.param("fsm/waypoint_num", waypoints_num_, -1);
@@ -165,7 +164,7 @@ void TopoReplanFSM::waypointCallback(const geometry_msgs::PoseStampedPtr &msg)
     init_pt_ = odom_pos_;
 
     Eigen::Vector3d end_wp(msg->pose.position.x,msg->pose.position.y, 1.0);
-
+    visualization_->displayGoalPoint(end_wp,Eigen::Vector4d(1,0,0,1),0.5,100);
     planNextWaypoint(end_wp);
 
 }
@@ -274,7 +273,10 @@ void TopoReplanFSM::execFSMCallback(const ros::TimerEvent &e)
             flag_random_poly_init = true;
         }
 
-        bool success = callReboundReplan(true, flag_random_poly_init);
+
+        bool success = callReboundReplan(true,flag_random_poly_init);
+
+
         if (success)
         {
             changeFSMExecState(EXEC_TRAJ, "FSM");
@@ -404,13 +406,27 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
     constexpr double time_step = 0.01;
     double t_cur = (ros::Time::now() - info->start_time_).toSec();
     double t_2_3 = info->duration_ * 2 / 3;
+    int traj_risk_step = 0;
     double traj_risk = 0;
+    /*
+    1. if in inflate map, emergency stop
+    2. if traj risk > thresh, replan
+    */
     for (double t = t_cur; t < info->duration_; t += time_step)
     {
+        traj_risk_step++;
         if (t_cur < t_2_3 && t >= t_2_3) // If t_cur < t_2_3, only the first 2/3 partition of the trajectory is considered valid and will get checked.
             break;
         
         Eigen::Vector3d pt = info->position_traj_.evaluateDeBoorT(t);
+        
+        if(traj_risk_step >= 10)
+        {
+            traj_risk_step = 0;
+            traj_risk += map->getVoxelFutureRisk(pt);
+        }
+
+
         if(map->getInflateOccupancy(pt))
         {
             if(planFromCurrentTraj())
@@ -426,17 +442,22 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
                     ROS_WARN("Suddenly discovered obstacles. emergency stop! time=%f", t - t_cur);
                     fail_times ++;
                     ROS_ERROR("fail_times: %d",fail_times);
-                    changeFSMExecState(EMERGENCY_STOP, "SAFETY");
-                    
+                    changeFSMExecState(EMERGENCY_STOP, "SAFETY");           
                 }
                 else
                 {
                     ROS_WARN("current traj in collision, replan.");
                     changeFSMExecState(REPLAN_TRAJ, "SAFETY");
-                    return ;
                 }
+                return ;
             }
             break;
+        }
+        if(traj_risk > planner_manager_->pp_.traj_risk_thresh_)
+        {
+            ROS_WARN("current traj risk is too high, replan.");
+            changeFSMExecState(REPLAN_TRAJ, "SAFETY");
+            return ;
         }
     }
 }
@@ -445,49 +466,57 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
 
 bool TopoReplanFSM::callReboundReplan(bool flag_use_poly_init, bool flag_randomPolyTraj)
 {
-    getLocalTarget();
-
-    bool plan_success =
-        planner_manager_->reboundReplan(start_pt_, start_vel_, start_acc_, local_target_pt_, local_target_vel_, (have_new_target_ || flag_use_poly_init), flag_randomPolyTraj);
-    have_new_target_ = false;
-
-    cout << "final_plan_success=" << plan_success << endl;
-
-    if (plan_success)
+    if(mutex_call_rebound_replan_.try_lock())
     {
+        getLocalTarget();
 
-        auto info = &planner_manager_->local_data_;
+        bool plan_success =
+            planner_manager_->reboundReplan(start_pt_, start_vel_, start_acc_, local_target_pt_, local_target_vel_, (have_new_target_ || flag_use_poly_init), flag_randomPolyTraj);
+        have_new_target_ = false;
 
-        /* publish traj */
-        traj_utils::Bspline bspline;
-        bspline.order = 3;
-        bspline.start_time = info->start_time_;
-        bspline.traj_id = info->traj_id_;
+        cout << "final_plan_success=" << plan_success << endl;
 
-        Eigen::MatrixXd pos_pts = info->position_traj_.getControlPoint();
-        bspline.pos_pts.reserve(pos_pts.cols());
-        for (int i = 0; i < pos_pts.cols(); ++i)
+        if (plan_success)
         {
-            geometry_msgs::Point pt;
-            pt.x = pos_pts(0, i);
-            pt.y = pos_pts(1, i);
-            pt.z = pos_pts(2, i);
-            bspline.pos_pts.push_back(pt);
-        }
 
-        Eigen::VectorXd knots = info->position_traj_.getKnot();
-        bspline.knots.reserve(knots.rows());
-        for (int i = 0; i < knots.rows(); ++i)
-        {
-            bspline.knots.push_back(knots(i));
-        }
+            auto info = &planner_manager_->local_data_;
 
-        bspline_pub_.publish(bspline);
-        // ROS_INFO("publish bspline");
-        // visualization_->displayOptimalList(info->position_traj_.getControlPoint(), 0);
+            /* publish traj */
+            traj_utils::Bspline bspline;
+            bspline.order = 3;
+            bspline.start_time = info->start_time_;
+            bspline.traj_id = info->traj_id_;
+
+            Eigen::MatrixXd pos_pts = info->position_traj_.getControlPoint();
+            bspline.pos_pts.reserve(pos_pts.cols());
+            for (int i = 0; i < pos_pts.cols(); ++i)
+            {
+                geometry_msgs::Point pt;
+                pt.x = pos_pts(0, i);
+                pt.y = pos_pts(1, i);
+                pt.z = pos_pts(2, i);
+                bspline.pos_pts.push_back(pt);
+            }
+
+            Eigen::VectorXd knots = info->position_traj_.getKnot();
+            bspline.knots.reserve(knots.rows());
+            for (int i = 0; i < knots.rows(); ++i)
+            {
+                bspline.knots.push_back(knots(i));
+            }
+
+            bspline_pub_.publish(bspline);
+            // ROS_INFO("publish bspline");
+            // visualization_->displayOptimalList(info->position_traj_.getControlPoint(), 0);
+        }
+        mutex_call_rebound_replan_.unlock();
+        return plan_success;
     }
-
-    return plan_success;
+    else
+    {
+        return false;
+    }
+    
 
 }
 

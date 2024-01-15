@@ -61,6 +61,7 @@ using std::endl;
       line_strip.points.push_back(pt);
     }
     //if (show_sphere) pub.publish(sphere);
+
     pub.publish(line_strip);
   }
 

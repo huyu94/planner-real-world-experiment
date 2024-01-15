@@ -73,8 +73,7 @@ struct MappingParamters
     Vector3d local_update_range3d_; // half of update range double 
     Vector3i local_update_range3i_; // half of update range int
 
-    int inf_grid_; // inflate grid number 
-    double obstacles_inflation_; // inflat grid size double 
+
     string frame_id_; // 
     int pose_type_; // 
     bool enable_virtual_wall_; // 是否允许虚拟墙体出现
@@ -103,7 +102,12 @@ struct MappingParamters
     // float angle_resolution_rad_; //角度分辨率-弧度制
     // float half_angle_resolution_rad_; //角度分辨率的一一半-弧度制
     const float one_degree_rad_ = M_PI / 180;
-    int half_fov_horizontal_;
+    const float one_rad_degree_ = 180 / M_PI;
+    // int half_fov_horizontal_;
+    int fov_horizontal_lowbound_;
+    int fov_horizontal_upbound_;
+    float fov_horizontal_lowbound_rad_;
+    float fov_horizontal_upbound_rad_;
     // int half_fov_vertical_;
     int fov_vertical_lowbound_;
     int fov_vertical_upbound_;
@@ -112,7 +116,7 @@ struct MappingParamters
 
 
     /* voxel subspace  */ 
-    int voxel_num_; 
+    // int voxel_num_; 
     int max_particle_num_in_voxel_;
     int safe_particle_num_in_voxel_;
     int safe_particle_num_in_pyramid_;// fov空间中最大的粒子数量
@@ -174,12 +178,16 @@ struct MappingParamters
     const int max_point_num_ = 5000; // input cloud max size 
 
 
-    /* camera parameters */
-    // double cx_, cy_, fx_, fy_;
     /* occupancy param */
     double occupancy_thresh_;  // 占据阈值
     double risk_thresh_; // 风险阈值
-    double acc_future_risk_thresh_; // 时间累积风险阈值
+    int risk_point_gate_; // 非对称障碍物中心点数量阈值
+
+    /* inflation */
+    int inf_grid_; // inflate grid number 
+    double obstacles_inflation_; // inflat grid size double 
+
+
 
 };
 
@@ -195,6 +203,7 @@ struct MappingData
     Vector3d ringbuffer_upbound3d_;
     Vector3i ringbuffer_upbound3i_;
     Vector3i ringbuffer_size3i_;
+    int buffer_size_;
     /* inflation */
     Vector3i ringbuffer_inf_origin3i_;
     Vector3d ringbuffer_inf_lowbound3d_;
@@ -202,6 +211,7 @@ struct MappingData
     Vector3d ringbuffer_inf_upbound3d_;
     Vector3i ringbuffer_inf_upbound3i_;
     Vector3i ringbuffer_inf_size3i_;
+    int inf_buffer_size_;
 
     /* particle map */
     //根据体素存储对应粒子，[VOXEL_NUM]体素数量，SAFE_PARTICLE_NUM_VOXEL体素内最大粒子数。
@@ -235,6 +245,7 @@ struct MappingData
     vector<float> input_points_; // odom+lidar-callback input points
     // list for the number of observed point cloud in pyramid of fov
     vector<float> max_depth_in_pyramid; // 用来fov金字塔空间中的深度
+    // inflation 
     vector<uint16_t> occupancy_buffer_inflate_;
 
     /* velocity estimation */
@@ -272,12 +283,15 @@ struct MappingData
     bool flag_lidar_odom_timeout_;
     bool flag_have_ever_received_lidar_;
 
-    // std::vector<short> count_hit_, count_hit_and_miss_;
-    // std::vector<char> flag_traverse_, flag_rayend_;
-    // char raycast_num_;
+    // inflation
+    int inf_grid_;
+    double obstacles_inflation_;
 
-    // vector<Vector3i> cache_voxel_;
-    // int cache_voxel_cnt_;
+    // queue<Eigen::Vector3i> rising_queue_;
+    // queue<Eigen::Vector3i> falling_queue_;
+
+
+
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -295,7 +309,9 @@ public:
     int getInflateOccupancy(const Vector3d &pos);
     int getInflateOccupancy(const Vector3i &idx);
     double getVoxelFutureRisk(const Vector3d &pos);
-    double getVoxelFutureRisk(const Vector3i& idx);
+    double getVoxelFutureRisk(const Vector3i &idx);
+    bool getVoxelFutureDangerous(const Vector3d &pos);
+    bool getVoxelFutureDangerous(const Vector3i &idx);
     inline double getResolution();
     inline Vector3d getOrigin();
     bool getOdomLidarTimeout(){return md_.flag_lidar_odom_timeout_;}
@@ -316,6 +332,11 @@ public:
     inline bool isInInfBuf(const Vector3i &idx);
 
 
+    /* inflation */
+    inline void changeInfBuf(const bool dir, const int inf_buf_idx, Eigen::Vector3i global_idx);
+    // inline void inflatePoint(const Eigen::Vector3i &pt, int inf_step, vector<Eigen::Vector3i> &inf_pts);
+    
+
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -334,7 +355,7 @@ private:
     void publishFutureStatus();
     void publishMapInflate();
     void publishParticle();
-
+    void publishBoundary();
     /* receive callback */
     void lidarOdomCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg,
                            const nav_msgs::OdometryConstPtr &odom_msg);
@@ -378,7 +399,6 @@ private:
 
 
 
-    inline void changeInBuf(const bool dir, const int inf_buf_idx, const Vector3i global_idx);
     inline int setCacheOccupancy(Vector3d pos, int occ);
     Vector3d closestPointInMap(const Vector3d &pt, const Vector3d &center);
     void testIndexingCost();
@@ -399,6 +419,7 @@ private:
 
     ros::Subscriber indep_cloud_sub_, indep_odom_sub_, indep_pose_sub_;
     ros::Publisher map_pub_, map_inflate_pub_,map_future_pub_,pose_pub_,aabb_pub_,cloud_pub_,particle_pub_, sensor_fov_pub_;
+    ros::Publisher map_boundary_pub_;
     ros::Timer occ_update_timer_, vis_timer_;
 
     uniform_real_distribution<double> rand_noise_;
@@ -488,45 +509,15 @@ inline Vector3d DspMap::getOrigin()
 }
 
 
-inline void DspMap::changeInBuf(const bool dir, const int inf_buf_idx, const Vector3i global_idx)
+inline Vector3i DspMap::pos2GlobalIdx(const Vector3d &pos)
 {
-    int inf_grid = mp_.inf_grid_;
-    if(dir)
-    {
-        md_.occupancy_buffer_inflate_[inf_buf_idx] += GRID_MAP_OBS_FLAG;
-    }
-    else{
-        md_.occupancy_buffer_inflate_[inf_buf_idx] -= GRID_MAP_OBS_FLAG;
-    }
-
-    for(int x_inf = -inf_grid; x_inf <= inf_grid; ++x_inf)
-    {
-        for(int y_inf = -inf_grid; y_inf <= inf_grid; ++y_inf)
-        {
-            for(int z_inf = -inf_grid; z_inf <= inf_grid; ++z_inf)
-            {
-                Vector3i idx_inf = global_idx + Vector3i(x_inf, y_inf, z_inf);
-                int id_inf_buf = globalIdx2InfBufIdx(idx_inf);
-                if(dir)
-                {
-                    ++md_.occupancy_buffer_inflate_[id_inf_buf];
-                }
-                else
-                {
-                    --md_.occupancy_buffer_inflate_[id_inf_buf];
-                    if(md_.occupancy_buffer_inflate_[id_inf_buf] > 65000) // an error case
-                    {
-                        ROS_ERROR("A negative value of nearby obstacle number ! reset the map");
-                        // fill(md_.occupancy_buffer.begin(),md_.occ_occupancy_buffer.end(),mp_.)
-                        // fill(md_.occupancy_buffer_inflate_.begin(),md_.occupancy_buffer_inflate_.end(),0);
-                    }
-                }
-            }
-        }
-    }
+    return (pos * mp_.voxel_resolution_inv_).array().floor().cast<int>(); // more than twice faster than std::floor()
 }
 
-
+inline Vector3d DspMap::globalIdx2Pos(const Vector3i &idx)
+{
+    return Vector3d((idx(0) + 0.5) * mp_.voxel_resolution_, (idx(1) + 0.5) * mp_.voxel_resolution_, (idx(2) + 0.5) * mp_.voxel_resolution_);
+}
 
 /* global idx ------> buffer idx*/
 inline int DspMap::globalIdx2BufIdx(const Vector3i &id)
@@ -546,17 +537,6 @@ inline int DspMap::globalIdx2BufIdx(const Vector3i &id)
 
     return md_.ringbuffer_size3i_(0) * md_.ringbuffer_size3i_(1) * z_buffer + md_.ringbuffer_size3i_(0) * y_buffer + x_buffer;
 }
-
-inline Vector3i DspMap::pos2GlobalIdx(const Vector3d &pos)
-{
-    return (pos * mp_.voxel_resolution_inv_).array().floor().cast<int>(); // more than twice faster than std::floor()
-}
-
-inline Vector3d DspMap::globalIdx2Pos(const Vector3i &idx)
-{
-    return Vector3d((idx(0) + 0.5) * mp_.voxel_resolution_, (idx(1) + 0.5) * mp_.voxel_resolution_, (idx(2) + 0.5) * mp_.voxel_resolution_);
-}
-
 
 /* global idx ------> inflate buffer idx */
 inline int DspMap::globalIdx2InfBufIdx(const Vector3i &id)
@@ -595,7 +575,7 @@ inline Vector3i DspMap::bufIdx2GlobalIdx(size_t address)
     {
         yid_global -= md_.ringbuffer_size3i_(1);
     }
-    int zid_global = xid_in_buffer + md_.ringbuffer_origin3i_(2);
+    int zid_global = zid_in_buffer + md_.ringbuffer_origin3i_(2);
     if(zid_global > md_.ringbuffer_upbound3i_(2))
     {
         zid_global -= md_.ringbuffer_size3i_(2);
@@ -611,7 +591,7 @@ inline Vector3i DspMap::infBufIdx2GlobalIdx(size_t address)
     int zid_in_buffer = address / ringbuffer_xysize;
     address %= ringbuffer_xysize;
     int yid_in_buffer = address / md_.ringbuffer_inf_size3i_(0);
-    int xid_in_buffer = address / md_.ringbuffer_inf_size3i_(0);
+    int xid_in_buffer = address % md_.ringbuffer_inf_size3i_(0);
 
     int xid_global = xid_in_buffer + md_.ringbuffer_inf_origin3i_(0);
     if(xid_global > md_.ringbuffer_inf_upbound3i_(0))
@@ -632,6 +612,67 @@ inline Vector3i DspMap::infBufIdx2GlobalIdx(size_t address)
     return Vector3i(xid_global,yid_global,zid_global);
 }
 
+
+inline void DspMap::changeInfBuf(const bool dir, const int inf_buf_idx, Eigen::Vector3i global_idx)
+{
+    int inf_grid = mp_.inf_grid_;
+    // if(dir)
+    // {
+    //     md_.occupancy_buffer_inflate_[inf_buf_idx] += GRID_MAP_OBS_FLAG;
+    // }
+    // else
+    // {
+    //     md_.occupancy_buffer_inflate_[inf_buf_idx] -= GRID_MAP_OBS_FLAG;
+    // }
+
+    for (int x_inf = -inf_grid; x_inf <= inf_grid; ++x_inf)
+    {
+        for (int y_inf = -inf_grid; y_inf <= inf_grid; ++y_inf)
+        {
+            for (int z_inf = -inf_grid; z_inf <= inf_grid; ++z_inf)
+            {
+                Eigen::Vector3i id_inf(global_idx + Eigen::Vector3i(x_inf,y_inf,z_inf));
+
+                int id_inf_buf = globalIdx2InfBufIdx(id_inf);
+                if(dir)
+                {   
+                    ++md_.occupancy_buffer_inflate_[id_inf_buf];
+                }
+                else
+                {
+                    if(md_.occupancy_buffer_inflate_[id_inf_buf] > 0)
+                    {
+                        --md_.occupancy_buffer_inflate_[id_inf_buf];
+                    }
+                    if(md_.occupancy_buffer_inflate_[id_inf_buf] > 65000)
+                    {
+                        ROS_ERROR("A negtive value of nearby obstacle number! reset the map.");
+                    }
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+// inline void DspMap::inflatePoint(const Eigen::Vector3i &pt, int inf_step, vector<Eigen::Vector3i> &pts)
+// {
+//     // int num = 0;
+//     for(int x = -inf_step; x <= inf_step; ++x)
+//     {
+//         for(int y = -inf_step; y <= inf_step; ++y)
+//         {
+//             for(int z = -inf_step; z <= inf_step; ++z)
+//             {
+//                 Eigen::Vector3i inf_pt{pt(0) + x, pt(1) + y, pt(2) + z};
+//                 pts.emplace_back(inf_pt);
+//             }
+//         }
+//     }
+// }
 
 
 inline bool DspMap::isInBuf(const Vector3d &pos)

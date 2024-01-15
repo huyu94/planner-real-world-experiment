@@ -60,9 +60,9 @@ void TopoPRM::findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end,
 
     start_pts_ = start_pts;
     end_pts_ = end_pts;
-    
+
     graph = createGraph(start, end);
-    // ROS_INFO("create graph finished");
+    ROS_INFO("create graph finished");
     graph_time = (ros::Time::now() - t1).toSec();
     cout << "create graph: " << (t2 - t1).toSec() << endl;
     /* ---------- search paths in the graph ---------- */
@@ -108,6 +108,9 @@ void TopoPRM::findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end,
 
 list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d end)
 {
+    static int count = 0;
+    std::cout << endl
+            << "[create graph]: -------------------------------------" << count++ << std::endl;
     graph_.clear();
     
     GraphNode::Ptr start_node = GraphNode::Ptr(new GraphNode(start, GraphNode::Guard, 0));
@@ -143,6 +146,7 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
     double sample_time = 0.0;
     Eigen::Vector3d pt;
     ros::Time t1, t2;
+    // ROS_INFO("start in [create graph]");
     while (sample_time < max_sample_time_ && sample_num < max_sample_num_) {
         t1 = ros::Time::now();
 
