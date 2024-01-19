@@ -3,21 +3,18 @@
   <arg name="map_size_y" value="20.0" />
   <arg name="map_size_z" value="4.0" />
 
-  <arg name="odom_topic" value="odometry" />
-  <arg name="drone_id" value="0" />
+  <arg name="odom_topic" value="/odometry" />
 
   <!-- 全局地图及局部感知 -->
   <include file="$(find plan_manage)/launch/include/map.xml">
     <arg name="map_size_x_" value="$(arg map_size_x)" />
     <arg name="map_size_y_" value="$(arg map_size_y)" />
     <arg name="map_size_z_" value="$(arg map_size_z)" />
-    <arg name="odom_topic" value="/drone_$(arg drone_id)_$(arg odom_topic)" />
-    <arg name="drone_id" value="$(arg drone_id)" />
+    <arg name="odom_topic" value="$(arg odom_topic)" />
   </include>
 
   <!-- simulator -->
   <include file="$(find plan_manage)/launch/include/simulator.xml">
-    <arg name="drone_id" value="$(arg drone_id)" />
     <arg name="map_size_x_" value="$(arg map_size_x)" />
     <arg name="map_size_y_" value="$(arg map_size_y)" />
     <arg name="map_size_z_" value="$(arg map_size_z)" />
@@ -29,13 +26,12 @@
 
   <!-- planner -->
   <include file="$(find plan_manage)/launch/include/planner.xml">
-    <arg name="drone_id" value="$(arg drone_id)"/>
     <arg name="map_size_x_" value="$(arg map_size_x)"/>
     <arg name="map_size_y_" value="$(arg map_size_y)"/>
     <arg name="map_size_z_" value="$(arg map_size_z)"/>
     
     <arg name="odometry_topic" value="$(arg odom_topic)"/>
-    <arg name="cloud_topic" value="pcl_render_node/cloud"/>
+    <arg name="cloud_topic" value="pcl_render_node/rendered_pcl"/>
 
     <!-- maximum velocity and acceleration the drone will reach -->
     <arg name="max_vel" value="3.0" />
@@ -45,8 +41,6 @@
     <!-- <arg name="planning_horizon" value="4.5" />  -->
     <arg name="planning_horizon" value="6.0" /> 
 
-    <!-- topo replan -->
-    <arg name="use_distinctive_trajs" value="false" />
 
     <!-- 1: use 2D Nav Goal to select goal  -->
     <!-- 2: use global waypoints below  -->
@@ -79,17 +73,30 @@
   </include>
 
   <!-- trajectory server -->
-  <node pkg="plan_manage" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
-      <remap from="~position_cmd" to="drone_$(arg drone_id)_planning/pos_cmd" />
-      <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline" />
+  <node pkg="plan_manage" name="traj_server" type="traj_server" output="screen">
+      <remap from="~position_cmd" to="/planning/pos_cmd" />
+      <remap from="~planning/bspline" to="/planning/bspline" />
 
       <param name="traj_server/time_forward" value="1.0" type="double" />
   </node>
 
 
+  <node pkg="depth_sensor_simulator" type="pcl_render_node" name="pcl_render_node" output="screen">
+    <rosparam command="load" file="$(find depth_sensor_simulator)/params/camera.yaml" />
 
+    <param name="sensing_horizon"  value="5.0" />
+    <param name="sensing_rate"     value="10.0"/>
+    <param name="estimation_rate"  value="30.0"/>
+    <param name="map/x_size"     value="$(arg map_size_x)"/>
+    <param name="map/y_size"     value="$(arg map_size_y)"/>
+    <param name="map/z_size"     value="$(arg map_size_z)"/>
+
+    <!-- <remap from="~global_map" to="/dynamic_map_generator/global_cloud"/> -->
+    <remap from="~local_map"  to="/dynamic_map_generator/local_cloud"/>
+    <remap from="~odometry"   to="$(arg odom_topic)"/>
+  </node>
 
   <!-- <include file="$(find plan_manage)/launch/rviz.launch" /> -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find plan_manage)/config/default.rviz" required="true" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find plan_manage)/rviz/default.rviz" required="true" />
 
 </launch>

@@ -1,16 +1,19 @@
 <launch>
     <!-- number of moving objects -->
+    <arg name="obj_num" value="10" />
+    <arg name="drone_id" value="0"/>
 
     <arg name="map_size_x" value="20"/>
     <arg name="map_size_y" value="10"/>
     <arg name="map_size_z" value="4.0"/>
-    <arg name="odom_topic" value="/robot/dlio/odom_node/odom"/>
-    <arg name="cloud_topic" value="/robot/dlio/odom_node/pointcloud/deskewed"/>
-    <!-- <arg name="odom_topic" value="/Odometry"/> -->
-    <!-- <arg name="cloud_topic" value="/cloud_registered"/> -->
+    <!-- <arg name="odom_topic" value="/robot/dlio/odom_node/odom"/> -->
+    <!-- <arg name="cloud_topic" value="/robot/dlio/odom_node/pointcloud/deskewed"/> -->
+    <arg name="odom_topic" value="/iris_0/mavros/local_position/odom"/>
+    <arg name="cloud_topic" value="/iris_0/realsense/depth_camera/depth/points"/>
 
     <!-- main algorithm params -->
-    <include file="$(find plan_manage)/launch/include/real_world_planner.xml">
+    <include file="$(find plan_manage)/launch/include/xtdrone_planner.xml">
+        <arg name="drone_id" value="$(arg drone_id)"/>
         <arg name="map_size_x_" value="$(arg map_size_x)"/>
         <arg name="map_size_y_" value="$(arg map_size_y)"/>
         <arg name="map_size_z_" value="$(arg map_size_z)"/>
@@ -18,11 +21,14 @@
         <arg name="odometry_topic" value="$(arg odom_topic)"/>
         <arg name="cloud_topic" value="$(arg cloud_topic)"/>
         <!-- maximum velocity and acceleration the drone will reach -->
-        <arg name="max_vel" value="3.0" />
+        <arg name="max_vel" value="4.0" />
         <arg name="max_acc" value="3.0" />
-
+        
+        
         <!--always set to 1.5 times grater than sensing horizen-->
         <arg name="planning_horizon" value="4.5" />
+
+            <!-- topo replan -->
 
         <!-- 1: use 2D Nav Goal to select goal  -->
         <!-- 2: use global waypoints below  -->
@@ -30,7 +36,7 @@
         
         <!-- global waypoints -->
         <!-- It generates a piecewise min-snap traj passing all waypoints -->
-        <arg name="point_num" value="1" />
+        <arg name="point_num" value="4" />
 
         <arg name="point0_x" value="0" />
         <arg name="point0_y" value="0" />
@@ -51,19 +57,23 @@
         <arg name="point4_x" value="-15.0" />
         <arg name="point4_y" value="0.0" />
         <arg name="point4_z" value="1.0" />
-
     </include>
     
     <!-- trajectory server -->
-    <node pkg="plan_manage" name="traj_server" type="traj_server" output="screen">
-        <remap from="~position_cmd" to="/position_cmd" />
-        <remap from="~planning/bspline" to="planning/bspline" />
+    <node pkg="plan_manage" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
+        <!-- <remap from="~position_cmd" to="/position_cmd" /> -->
+        <remap from="position_cmd" to="/xtdrone/iris_$(arg drone_id)/planning/pos_cmd"/>
+        <remap from="~pose_cmd" to="/xtdrone/iris_$(arg drone_id)/cmd_pose_enu"/>
+        <!-- <remap from="planning/bspline" to="/xtdrone/iris_$(arg drone_id)/planning/bspline"/> -->
+        <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline" />
+
+        <!-- <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline" /> -->
 
         <param name="traj_server/time_forward" value="1.0" type="double" />
     </node>
 
-    <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen">
-        <remap from="~odom" to="$(arg odom_topic)"/>
+    <node pkg="odom_visualization" name="drone_$(arg drone_id)_odom_visualization" type="odom_visualization" output="screen">
+        <remap from="~odom" to="/iris_0/mavros/local_position/odom"/>
         <param name="color/a" value="1.0"/>
         <param name="color/r" value="0.0"/>
         <param name="color/g" value="0.0"/>
@@ -71,7 +81,9 @@
         <param name="covariance_scale" value="100.0"/>
         <param name="robot_scale" value="1.0"/>
         <param name="tf45" value="false"/>
+        <param name="drone_id" value="drone_id"/>
     </node>
+    <node name="xtdrone" pkg="rviz" type="rviz" args="-d $(find plan_manage)/rviz/default.rviz" required="true" />
 
 
 </launch>

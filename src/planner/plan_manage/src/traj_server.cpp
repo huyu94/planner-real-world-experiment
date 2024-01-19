@@ -7,8 +7,10 @@
 #include <ros/ros.h>
 
 ros::Publisher pos_cmd_pub;
+ros::Publisher pose_cmd_pub;
 
 quadrotor_msgs::PositionCommand cmd;
+geometry_msgs::Pose pose_cmd;
 double pos_gain[3] = {0, 0, 0};
 double vel_gain[3] = {0, 0, 0};
 
@@ -226,6 +228,21 @@ void cmdCallback(const ros::TimerEvent &e)
   last_yaw_ = cmd.yaw;
 
   pos_cmd_pub.publish(cmd);
+
+
+  pose_cmd.position.x = pos(0);
+  pose_cmd.position.y = pos(1);
+  pose_cmd.position.z = pos(2);
+
+  pose_cmd.orientation.x = 0.0;
+  pose_cmd.orientation.y = 0.0;
+  pose_cmd.orientation.z = sin(yaw_yawdot.first/2);
+  pose_cmd.orientation.w = cos(yaw_yawdot.first/2);
+
+  pose_cmd_pub.publish(pose_cmd);
+  
+
+
 }
 
 int main(int argc, char **argv)
@@ -237,7 +254,7 @@ int main(int argc, char **argv)
   ros::Subscriber bspline_sub = nh.subscribe("planning/bspline", 10, bsplineCallback);
 
   pos_cmd_pub = nh.advertise<quadrotor_msgs::PositionCommand>("position_cmd", 50);
-
+  pose_cmd_pub = nh.advertise<geometry_msgs::Pose>("pose_cmd", 50);
   ros::Timer cmd_timer = nh.createTimer(ros::Duration(0.01), cmdCallback);
 
   /* control parameter */

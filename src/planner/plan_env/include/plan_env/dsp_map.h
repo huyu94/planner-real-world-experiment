@@ -16,6 +16,8 @@
 #include <ros/ros.h>
 #include <tuple>
 #include <visualization_msgs/Marker.h>
+#include <cv_bridge/cv_bridge.h>
+
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -75,7 +77,8 @@ struct MappingParamters
 
 
     string frame_id_; // 
-    int pose_type_; // 
+    int pose_type_; // 1. poseStamped; 2. odometry
+    int sensor_type_; // 1. lidar; 2. camera
     bool enable_virtual_wall_; // 是否允许虚拟墙体出现
     double virtual_ceil_, virtual_ground_; // 虚拟天花板、虚拟地面
     
@@ -144,7 +147,11 @@ struct MappingParamters
     float point_num_gate_;
     float maximum_velocity_;
     
-
+    /* camera */
+    double cx_, cy_, fx_, fy_;
+    double k_depth_scaling_factor_;
+    int skip_pixel_;
+    bool use_depth_filter_;
     /* non const */
 
     /* particle output */
@@ -270,9 +277,14 @@ struct MappingData
     // camera position and pose data
     // Vector3d lidar_position_, last_lidar_position_;
     // Quaterniond lidar_rotation_, last_lidar_rotation_;
-    Eigen::Affine3d lidar2world_,last_lidar2world_;
+    // Eigen::Affine3d lidar2world_,last_lidar2world_;
+    Eigen::Affine3d body2world_,last_body2world_;
+    Eigen::Affine3d camera2body_;
     // Matrix4d lidar2body_;
-    Eigen::Affine3d lidar2body_;
+
+    /* camera */
+    cv::Mat depth_image_, last_depth_image_;
+
 
     // flags of map state
     bool occ_need_update_, local_updated_;
@@ -304,10 +316,10 @@ public:
     ~DspMap() {}
 
     void initMap(ros::NodeHandle &nh);
-    int getOccupancy(const Vector3d& pos);
-    int getOccupancy(const Vector3i &idx);
-    int getInflateOccupancy(const Vector3d &pos);
-    int getInflateOccupancy(const Vector3i &idx);
+    bool getOccupancy(const Vector3d& pos);
+    bool getOccupancy(const Vector3i &idx);
+    bool getInflateOccupancy(const Vector3d &pos);
+    bool getInflateOccupancy(const Vector3i &idx);
     double getVoxelFutureRisk(const Vector3d &pos);
     double getVoxelFutureRisk(const Vector3i &idx);
     bool getVoxelFutureDangerous(const Vector3d &pos);
@@ -344,22 +356,21 @@ private:
     MappingParamters mp_;
     MappingData md_;
 
-    enum 
-    {
-        POSE_STAMPED = 1,
-        ODOMETRY = 2,
-        INVALID_IDX = -10000
-    };
-    void publishPoseAndFov();
+
     void publishMap();
     void publishFutureStatus();
     void publishMapInflate();
-    void publishParticle();
     void publishBoundary();
+    void publishCloud();
     /* receive callback */
     void lidarOdomCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg,
                            const nav_msgs::OdometryConstPtr &odom_msg);
     void lidarPoseCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg,
+                           const geometry_msgs::PoseStampedConstPtr &pose_msg);
+    void DepthOdomCallback(const sensor_msgs::ImageConstPtr &img,
+                           const nav_msgs::OdometryConstPtr &odom_msg);
+    void projectDepthImage();
+    void DepthPoseCallback(const sensor_msgs::ImageConstPtr &img,
                            const geometry_msgs::PoseStampedConstPtr &pose_msg);
     void lidarCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
     void odomCallback(const nav_msgs::OdometryConstPtr &odom_msg);
@@ -407,18 +418,26 @@ private:
 
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, nav_msgs::Odometry> SyncPolicyLidarOdom;
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, geometry_msgs::PoseStamped> SyncPolicyLidarPose;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, nav_msgs::Odometry> SyncPolicyDepthOdom;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::PoseStamped> SyncPolicyDepthPose;
     typedef shared_ptr<message_filters::Synchronizer<SyncPolicyLidarOdom>> SynchronizerLidarOdom;
     typedef shared_ptr<message_filters::Synchronizer<SyncPolicyLidarPose>> SynchronizerLidarPose;
+    typedef shared_ptr<message_filters::Synchronizer<SyncPolicyDepthOdom>> SynchronizerDepthOdom;
+    typedef shared_ptr<message_filters::Synchronizer<SyncPolicyDepthPose>> SynchronizerDepthPose;
 
     ros::NodeHandle node_;
     shared_ptr<message_filters::Subscriber<sensor_msgs::PointCloud2>> lidar_sub_;
+    shared_ptr<message_filters::Subscriber<sensor_msgs::Image>> depth_sub_;
     shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> odom_sub_;
     shared_ptr<message_filters::Subscriber<geometry_msgs::PoseStamped>> pose_sub_;
+
     SynchronizerLidarOdom sync_lidar_odom_;
     SynchronizerLidarPose sync_lidar_pose_;
+    SynchronizerDepthOdom sync_depth_odom_;
+    SynchronizerDepthPose sync_depth_pose_;
 
     ros::Subscriber indep_cloud_sub_, indep_odom_sub_, indep_pose_sub_;
-    ros::Publisher map_pub_, map_inflate_pub_,map_future_pub_,pose_pub_,aabb_pub_,cloud_pub_,particle_pub_, sensor_fov_pub_;
+    ros::Publisher map_pub_, map_inflate_pub_,map_future_pub_,pose_pub_,aabb_pub_,cloud_pub_ ;
     ros::Publisher map_boundary_pub_;
     ros::Timer occ_update_timer_, vis_timer_;
 

@@ -1,7 +1,6 @@
 
 <launch>
     <!-- number of moving objects -->
-    <arg name="drone_id"/>
     <arg name="map_size_x_"/>
     <arg name="map_size_y_"/>
     <arg name="map_size_z_"/>
@@ -16,10 +15,10 @@
         <param name="map/z_size"     value="$(arg map_size_z_)" />
         <param name="map/resolution" value="0.1"/>        
         <param name="map/frame_id"     value="world" />
-        <param name="map/seed" value="1"/>
+        <param name="map/seed" value="5"/>
         <param name="map/obs_num"    value="30"/>
     
-        <param name="obstacle/upper_vel" value="0.5"/>
+        <param name="obstacle/upper_vel" value="0.8"/>
 
         <param name="aabb/lower_x" value="0.5"/>
         <param name="aabb/upper_x" value="1.0"/>

@@ -61,7 +61,7 @@ std::vector<std::vector<Eigen::Vector3d>> BsplineOptimizer::initControlPoints(Ei
         for (double a = 1.0; a >= 0.0; a -= step_size)
         {
             Eigen::Vector3d pc = a * init_points.col(i - 1) + (1 - a) * init_points.col(i);
-            occ = dsp_map_->getInflateOccupancy(pc);
+            occ = dsp_map_->getInflateOccupancy(pc) || dsp_map_->getVoxelFutureDangerous(pc);
             // cout << setprecision(5);
             // cout << (a * init_points.col(i-1) + (1-a) * init_points.col(i)).transpose() << " occ1=" << occ << endl;
 
@@ -229,7 +229,7 @@ std::vector<std::vector<Eigen::Vector3d>> BsplineOptimizer::initControlPoints(Ei
                     for (double a = length; a >= 0.0; a -= dsp_map_->getResolution())
                     {
                         Eigen::Vector3d intersection_point = (a / length) * intersection_point + (1 - a / length) * cps_.points.col(j);
-                        occ = dsp_map_->getInflateOccupancy(intersection_point);
+                        occ = dsp_map_->getInflateOccupancy(intersection_point) || dsp_map_->getInflateOccupancy(intersection_point);
 
                         if (occ || a < dsp_map_->getResolution())
                         {
@@ -659,7 +659,7 @@ bool BsplineOptimizer::check_collision_and_rebound(void)
     for (int i = order_ - 1; i <= i_end; ++i)
     {
         Eigen::Vector3d pc = cps_.points.col(i);
-        bool occ = dsp_map_->getInflateOccupancy(pc);
+        bool occ = dsp_map_->getInflateOccupancy(pc) || dsp_map_->getVoxelFutureDangerous(pc);
 
         /*** check if the new collision will be valid ***/
         if (occ)
@@ -683,7 +683,7 @@ bool BsplineOptimizer::check_collision_and_rebound(void)
             for (j = i - 1; j >= 0; --j)
             {
                 Eigen::Vector3d pc = cps_.points.col(j);
-                occ = dsp_map_->getInflateOccupancy(pc);
+                occ = dsp_map_->getInflateOccupancy(pc) || dsp_map_->getVoxelFutureDangerous(pc);
                 if (!occ)
                 {
                     in_id = j;
@@ -700,7 +700,7 @@ bool BsplineOptimizer::check_collision_and_rebound(void)
             {
                 Eigen::Vector3d pc = cps_.points.col(j);
 
-                occ = dsp_map_->getInflateOccupancy(pc);
+                occ = dsp_map_->getInflateOccupancy(pc) || dsp_map_->getVoxelFutureDangerous(pc);
 
                 if (!occ)
                 {
@@ -790,7 +790,7 @@ bool BsplineOptimizer::check_collision_and_rebound(void)
                         for (double a = length; a >= 0.0; a -= dsp_map_->getResolution())
                         {
                             Eigen::Vector3d intersection_point = (a / length) * intersection_point + (1 - a / length) * cps_.points.col(j);
-                            bool occ = dsp_map_->getInflateOccupancy(intersection_point);
+                            bool occ = dsp_map_->getInflateOccupancy(intersection_point) || dsp_map_->getVoxelFutureDangerous(intersection_point);
 
                             if (occ || a < dsp_map_->getResolution())
                             {
@@ -928,7 +928,7 @@ bool BsplineOptimizer::rebound_optimize(double &final_cost)
             for (double t = tm; t < tmp * 2 / 3; t += t_step) // Only check the closest 2/3 partition of the whole trajectory.
             {
                 Eigen::Vector3d pt = traj.evaluateDeBoorT(t);
-                flag_occ = dsp_map_->getInflateOccupancy(pt);
+                flag_occ = dsp_map_->getInflateOccupancy(pt) || dsp_map_->getVoxelFutureDangerous(pt);
                 if (flag_occ)
                 {
                     // cout << "hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;
@@ -1022,7 +1022,7 @@ bool BsplineOptimizer::refine_optimize()
         for (double t = tm; t < tmp * 2 / 3; t += t_step)
         {
             Eigen::Vector3d pt = traj.evaluateDeBoorT(t);
-            if (dsp_map_->getInflateOccupancy(pt))
+            if (dsp_map_->getInflateOccupancy(pt) || dsp_map_->getVoxelFutureDangerous(pt))
             {
                 // cout << "Refined traj hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;
 

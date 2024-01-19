@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 find_package(OpenCV REQUIRED)
 
-set(cv_bridge_DIR /usr/local/share/cv_bridge/cmake)
+# set(cv_bridge_DIR /usr/local/share/cv_bridge/cmake)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -66,3 +66,24 @@ target_link_libraries(dsp_map_node
     ${PCL_LIBRARIES}
     ${OpenCV_LIBS}
     )
+
+
+add_executable(test_node
+    src/test_node.cpp
+)
+
+target_link_libraries(test_node
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${OpenCV_LIBS}
+)
+
+add_executable(test_pyramid_index
+    src/test_pyramid_index.cpp
+)
+
+target_link_libraries(test_pyramid_index
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${OpenCV_LIBS}
+)

@@ -16,7 +16,7 @@ using std::endl;
     topo_list_pub = nh.advertise<visualization_msgs::Marker>("topo_list",5);
     
     colorMap = {
-      Eigen::Vector4d(1, 0, 0, 1), // Red
+      Eigen::Vector4d(0.6, 0.4, 0, 1), // Red
       Eigen::Vector4d(0, 1, 0, 1), // Green
       Eigen::Vector4d(0, 0, 1, 1), // Blue
       Eigen::Vector4d(1, 1, 0, 1), // Yellow

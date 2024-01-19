@@ -4,14 +4,25 @@
 
 void DspMap::initMap(ros::NodeHandle &nh)
 {
-    std::string lidar_topic,odom_topic,pose_topic;
     node_ = nh;    
     node_.param("particle_map/pose_type",mp_.pose_type_,2);
+    node_.param("particle_map/sensor_type",mp_.sensor_type_,1);
     node_.param("particle_map/frame_id",mp_.frame_id_,string("world"));
-    node_.param("particle_map/odom_lidar_timeout",mp_.odom_lidar_timeout_,0.1);
-    node_.param("particle_map/local_update_range_x",mp_.local_update_range3d_(0),-1.0);
-    node_.param("particle_map/local_update_range_y",mp_.local_update_range3d_(1),-1.0);
-    node_.param("particle_map/local_update_range_z",mp_.local_update_range3d_(2),-1.0);
+    // node_.param<bool>("particle_map/is_sensor_frame",mp_.is_sensor_frame_,false);
+    /* camera */
+    node_.param<double>("particle_map/cx",mp_.cx_,320.5);
+    node_.param<double>("particle_map/cy",mp_.cy_,240.5);
+    node_.param<double>("particle_map/fx",mp_.fx_,554.254691191187);
+    node_.param<double>("particle_map/fy",mp_.fy_,554.254691191187);
+    node_.param<bool>("particle_map/use_depth_filter",mp_.use_depth_filter_,true);
+    node_.param<double>("particle_map/k_depth_scaling_factor",mp_.k_depth_scaling_factor_,-1.0);
+    node_.param<int>("particle_map/skip_pixel",mp_.skip_pixel_,-1);
+
+
+    node_.param<double>("particle_map/odom_lidar_timeout",mp_.odom_lidar_timeout_,0.1);
+    node_.param<double>("particle_map/local_update_range_x",mp_.local_update_range3d_(0),-1.0);
+    node_.param<double>("particle_map/local_update_range_y",mp_.local_update_range3d_(1),-1.0);
+    node_.param<double>("particle_map/local_update_range_z",mp_.local_update_range3d_(2),-1.0);
     node_.param<double>("particle_map/obstacles_inflation",mp_.obstacles_inflation_,0.2);
     node_.param<int>("particle_map/fov_vertical_lowbound",mp_.fov_vertical_lowbound_,-1);
     node_.param<int>("particle_map/fov_vertical_upbound",mp_.fov_vertical_upbound_,-1);
@@ -21,13 +32,9 @@ void DspMap::initMap(ros::NodeHandle &nh)
     node_.param("particle_map/enable_virtual_wall",mp_.enable_virtual_wall_,false);
     node_.param("particle_map/virtual_ceil",mp_.virtual_ceil_,5.0);
     node_.param("particle_map/virtual_ground",mp_.virtual_ground_,0.0);    
-    node_.param("particle_map/lidar_topic",lidar_topic,std::string("lidar_topic"));
-    node_.param("particle_map/odom_topic",odom_topic,std::string("odom_topic"));
-    node_.param("particle_map/pose_topic",pose_topic,std::string("pose_topic"));
     node_.param("particle_map/occupancy_thresh",mp_.occupancy_thresh_,0.5);
     node_.param("particle_map/enable_future_prediction",mp_.enable_future_prediction_,false);
-    node_.param("particle_map/prediction_z_height",mp_.prediction_z_height_,0.3);
-    node_.param("particle_map/prediction_y_offset",mp_.prediciton_y_offset_,15.0);
+
     node_.param("particle_map/position_prediction_stddev",mp_.position_prediction_stddev,0.05);
     node_.param("particle_map/velocity_prediction_stddev",mp_.velocity_prediction_stddev,0.05);
     node_.param("particle_map/sigma_ob",mp_.sigma_ob,0.2);
@@ -42,16 +49,16 @@ void DspMap::initMap(ros::NodeHandle &nh)
     node_.param("particle_map/dynamic_cluster_max_center_height",mp_.dynamic_cluster_max_center_height_,5.0F);
     node_.param("particle_map/dynamic_cluster_max_point_num",mp_.dynamic_cluster_max_point_num_,200);
     node_.param<int>("particle_map/inf_grid",mp_.inf_grid_,1);
-    ROS_INFO("risk_thresh : %f",mp_.risk_thresh_);
-    ROS_INFO("local_update_range3d_x : %f",mp_.local_update_range3d_(0));
-    ROS_INFO("local_update_range3d_y : %f",mp_.local_update_range3d_(1));
-    ROS_INFO("local_update_range3d_z : %f",mp_.local_update_range3d_(2));
+    // ROS_INFO("risk_thresh : %f",mp_.risk_thresh_);
+    // ROS_INFO("local_update_range3d_x : %f",mp_.local_update_range3d_(0));
+    // ROS_INFO("local_update_range3d_y : %f",mp_.local_update_range3d_(1));
+    // ROS_INFO("local_update_range3d_z : %f",mp_.local_update_range3d_(2));
 
-    ROS_INFO("sigma_ob %f",mp_.sigma_ob);
-    ROS_INFO("new_born_particle_weight %f",mp_.new_born_particle_weight_);
-    ROS_INFO("new_born_particle_number_each_point %d",mp_.new_born_particle_number_each_point_);
-    ROS_INFO("voxel_filter_resolution %f",mp_.voxel_filter_resolution_);
-    ROS_INFO("occunpancy thresh :%f ",mp_.occupancy_thresh_);
+    // ROS_INFO("sigma_ob %f",mp_.sigma_ob);
+    // ROS_INFO("new_born_particle_weight %f",mp_.new_born_particle_weight_);
+    // ROS_INFO("new_born_particle_number_each_point %d",mp_.new_born_particle_number_each_point_);
+    // ROS_INFO("voxel_filter_resolution %f",mp_.voxel_filter_resolution_);
+    // ROS_INFO("occunpancy thresh :%f ",mp_.occupancy_thresh_);
 
     /* ============================================== DSP Map ==============================================================*/
     /* dsp map space parameters */
@@ -63,14 +70,14 @@ void DspMap::initMap(ros::NodeHandle &nh)
     mp_.fov_vertical_upbound_rad_ = (float)mp_.fov_vertical_upbound_ * mp_.one_degree_rad_;
     mp_.fov_horizontal_lowbound_rad_ = (float)mp_.fov_horizontal_lowbound_ * mp_.one_degree_rad_;
     mp_.fov_horizontal_upbound_rad_ = (float)mp_.fov_horizontal_upbound_ * mp_.one_degree_rad_;
-    ROS_INFO("fov_vertical_lowbound : %d ",mp_.fov_vertical_lowbound_);
-    ROS_INFO("fov_vertical_upbound : %d ",mp_.fov_vertical_upbound_);
-    ROS_INFO("fov_horizontal_lowbound : %d ",mp_.fov_horizontal_lowbound_);
-    ROS_INFO("fov_horizontal_upbound : %d ",mp_.fov_horizontal_upbound_);
-    ROS_INFO("fov_vertical_lowbound_rad : %f ",mp_.fov_vertical_lowbound_rad_);
-    ROS_INFO("fov_vertical_upbound_rad : %f ",mp_.fov_vertical_upbound_rad_);
-    ROS_INFO("fov_horizontal_lowbound_rad : %f ",mp_.fov_horizontal_lowbound_rad_);
-    ROS_INFO("fov_horizontal_upbound_rad : %f ",mp_.fov_horizontal_upbound_rad_);
+    // ROS_INFO("fov_vertical_lowbound : %d ",mp_.fov_vertical_lowbound_);
+    // ROS_INFO("fov_vertical_upbound : %d ",mp_.fov_vertical_upbound_);
+    // ROS_INFO("fov_horizontal_lowbound : %d ",mp_.fov_horizontal_lowbound_);
+    // ROS_INFO("fov_horizontal_upbound : %d ",mp_.fov_horizontal_upbound_);
+    // ROS_INFO("fov_vertical_lowbound_rad : %f ",mp_.fov_vertical_lowbound_rad_);
+    // ROS_INFO("fov_vertical_upbound_rad : %f ",mp_.fov_vertical_upbound_rad_);
+    // ROS_INFO("fov_horizontal_lowbound_rad : %f ",mp_.fov_horizontal_lowbound_rad_);
+    // ROS_INFO("fov_horizontal_upbound_rad : %f ",mp_.fov_horizontal_upbound_rad_);
     // mp_.fov_horizontal_lowbound_rad_;fov_horizontal_upbound_rad_
     // mp_.fov_horizontal_upbound_rad_;
 
@@ -110,8 +117,8 @@ void DspMap::initMap(ros::NodeHandle &nh)
     mp_.local_update_range3i_ = (mp_.local_update_range3d_ * mp_.voxel_resolution_inv_).array().ceil().cast<int>();
     mp_.local_update_range3d_ = mp_.local_update_range3i_.array().cast<double>() * mp_.voxel_resolution_;
     // ROS_INFO("mp_.voxel_resolution_ : %f)
-    ROS_INFO("ringbuffer_local_update_range3i_ : %d %d %d",mp_.local_update_range3i_(0),mp_.local_update_range3i_(1),mp_.local_update_range3i_(2));
-    ROS_INFO("ringbuffer_local_update_range3d_ : %lf %lf %lf",mp_.local_update_range3d_(0),mp_.local_update_range3d_(1),mp_.local_update_range3d_(2));
+    // ROS_INFO("ringbuffer_local_update_range3i_ : %d %d %d",mp_.local_update_range3i_(0),mp_.local_update_range3i_(1),mp_.local_update_range3i_(2));
+    // ROS_INFO("ringbuffer_local_update_range3d_ : %lf %lf %lf",mp_.local_update_range3d_(0),mp_.local_update_range3d_(1),mp_.local_update_range3d_(2));
     md_.ringbuffer_size3i_ = 2 * mp_.local_update_range3i_;
     md_.ringbuffer_origin3i_ = Vector3i(0,0,0);
     md_.ringbuffer_inf_origin3i_ = Vector3i(0,0,0);
@@ -131,11 +138,11 @@ void DspMap::initMap(ros::NodeHandle &nh)
     // Vector3i map_voxel_num3i = 2 * mp_.local_update_range3i_;
     
     /* debug */
-    ROS_INFO("buffer_size_: %d", md_.buffer_size_);
-    ROS_INFO("inf_grid_ : %d",mp_.inf_grid_);
-    ROS_INFO("inf_buffer_size_ : %d",md_.inf_buffer_size_);
-    ROS_INFO("ringbuffer_size3i_ : %d, %d, %d",md_.ringbuffer_size3i_(0),md_.ringbuffer_size3i_(1),md_.ringbuffer_size3i_(2));
-    ROS_INFO("ringbuffer_inf_size3i_ : %d %d %d",md_.ringbuffer_inf_size3i_(0),md_.ringbuffer_inf_size3i_(1),md_.ringbuffer_inf_size3i_(2));
+    // ROS_INFO("buffer_size_: %d", md_.buffer_size_);
+    // ROS_INFO("inf_grid_ : %d",mp_.inf_grid_);
+    // ROS_INFO("inf_buffer_size_ : %d",md_.inf_buffer_size_);
+    // ROS_INFO("ringbuffer_size3i_ : %d, %d, %d",md_.ringbuffer_size3i_(0),md_.ringbuffer_size3i_(1),md_.ringbuffer_size3i_(2));
+    // ROS_INFO("ringbuffer_inf_size3i_ : %d %d %d",md_.ringbuffer_inf_size3i_(0),md_.ringbuffer_inf_size3i_(1),md_.ringbuffer_inf_size3i_(2));
     // ROS_INFO("")
     
 
@@ -144,7 +151,7 @@ void DspMap::initMap(ros::NodeHandle &nh)
     md_.current_cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>());
     md_.input_cloud_with_velocity_.reset(new pcl::PointCloud<pcl::PointXYZINormal>());
     md_.input_points_ = vector<float>(mp_.max_point_num_*3);
-    ROS_INFO("max point num : %d", mp_.max_point_num_);
+    // ROS_INFO("max point num : %d", mp_.max_point_num_);
 
     /* random variable vector */
     mp_.p_gaussian_randoms = vector<float>(mp_.guassian_random_num_);
@@ -197,25 +204,22 @@ void DspMap::initMap(ros::NodeHandle &nh)
     md_.flag_lidar_odom_timeout_ = false;
 
     /* position and rotation */
-    md_.lidar2body_.translation() << 0,0,0;
-    md_.lidar2body_.linear().setIdentity();
-    md_.lidar2world_.setIdentity();
-    md_.last_lidar2world_.setIdentity();
+    md_.camera2body_.translation() << 0,0,0;
+    Eigen::Matrix3d rotation;
+    rotation << 0.0, 0.0, 1.0,
+                -1.0, 0.0, 0.0,
+                0.0, -1.0, 0.0;
+    md_.camera2body_.linear() = rotation;
+    md_.body2world_.setIdentity();
+    md_.last_body2world_.setIdentity();
 
     
-    /* topic subscriber */
-    if(mp_.pose_type_ == 1)
+
+    if(mp_.pose_type_ == 1 && mp_.sensor_type_ == 1) // use pose & lidar
     {
-        ROS_INFO("We choose POSE_STAMPED as pose type!");
-    }
-    else
-    {
-        ROS_WARN("We choose ODOMETRY as pose type!");
-    }
-    lidar_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_,"lidar",1));
-    if(mp_.pose_type_ == POSE_STAMPED)
-    {
+        ROS_WARN("We choose POSE_STAMPED && LIDAR");
         pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_,"pose",1));
+        lidar_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_,"lidar",1));
         sync_lidar_pose_.reset(
             new message_filters::Synchronizer<SyncPolicyLidarPose>(
                 SyncPolicyLidarPose(100),*lidar_sub_,*pose_sub_
@@ -223,15 +227,41 @@ void DspMap::initMap(ros::NodeHandle &nh)
         );
         sync_lidar_pose_->registerCallback(boost::bind(&DspMap::lidarPoseCallback,this,_1,_2));
     }
-    else if(mp_.pose_type_ == ODOMETRY)
+    else if(mp_.pose_type_ == 2 && mp_.sensor_type_ == 1) // use odom & lidar
     {
+        ROS_WARN("We choose ODOMETRY && LIDAR");
         odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_,"odom",1));
+        lidar_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_,"lidar",1));
         sync_lidar_odom_.reset(
             new message_filters::Synchronizer<SyncPolicyLidarOdom>(
                 SyncPolicyLidarOdom(100),*lidar_sub_,*odom_sub_
             )
         );
         sync_lidar_odom_->registerCallback(boost::bind(&DspMap::lidarOdomCallback,this,_1,_2));
+    }
+    else if(mp_.pose_type_ == 1 && mp_.sensor_type_ == 2) // use pose & depth
+    {
+        ROS_WARN("We choose POSE_STAMPED && DEPTH");
+        pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_,"pose",1));
+        depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_,"depth",1));
+        sync_depth_pose_.reset(
+            new message_filters::Synchronizer<SyncPolicyDepthPose>(
+                SyncPolicyDepthPose(100),*depth_sub_,*pose_sub_
+            )
+        );
+        sync_depth_pose_->registerCallback(boost::bind(&DspMap::DepthPoseCallback,this,_1,_2));
+    }
+    else if(mp_.pose_type_ == 2 && mp_.sensor_type_ == 2) // use odom & depth
+    {
+        ROS_WARN("We choose ODOMETRY && DEPTH");
+        odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_,"odom",1));
+        depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_,"depth",1));
+        sync_depth_odom_.reset(
+            new message_filters::Synchronizer<SyncPolicyDepthOdom>(
+                SyncPolicyDepthOdom(100),*depth_sub_,*odom_sub_
+            )
+        );
+        sync_depth_odom_->registerCallback(boost::bind(&DspMap::DepthOdomCallback,this,_1,_2));
     }
     else
     {
@@ -245,75 +275,76 @@ void DspMap::initMap(ros::NodeHandle &nh)
     map_inflate_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/particle_map/inflate_map",1);
     map_future_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/particle_map/future_map",1);
     pose_pub_ = node_.advertise<geometry_msgs::PoseStamped>("/particle_map/pose",1);
-    sensor_fov_pub_ = node_.advertise<visualization_msgs::Marker>("/particle_map/sensor_fov",1);
-    particle_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/particle_map/paricle",1);
+    // sensor_fov_pub_ = node_.advertise<visualization_msgs::Marker>("/particle_map/sensor_fov",1);
+    // particle_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/particle_map/paricle",1);
     map_boundary_pub_ = node_.advertise<visualization_msgs::Marker>("/particle_map/map_boundary",1);
+    cloud_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/particle_map/cloud",1);
     ROS_INFO("Particle map initialized!");
     
 }
 
 /* ======================== like ego ringbuffeer functions */
 
-void DspMap::publishPoseAndFov()
-{
-    /* 1. pub pose */
-    geometry_msgs::PoseStamped pose_msg;
-    pose_msg.header.stamp = ros::Time::now();
-    pose_msg.header.frame_id = mp_.frame_id_;
-    Eigen::Vector3d lidar_position = md_.lidar2world_.translation();
+// void DspMap::publishPoseAndFov()
+// {
+//     /* 1. pub pose */
+//     geometry_msgs::PoseStamped pose_msg;
+//     pose_msg.header.stamp = ros::Time::now();
+//     pose_msg.header.frame_id = mp_.frame_id_;
+//     Eigen::Vector3d lidar_position = md_.body2world_.translation();
 
-    pose_msg.pose.position.x = lidar_position(0);
-    pose_msg.pose.position.y = lidar_position(1);
-    pose_msg.pose.position.z = lidar_position(2);
+//     pose_msg.pose.position.x = lidar_position(0);
+//     pose_msg.pose.position.y = lidar_position(1);
+//     pose_msg.pose.position.z = lidar_position(2);
 
 
-    Quaterniond q(md_.lidar2world_.rotation());
-    pose_msg.pose.orientation.w = q.w();
-    pose_msg.pose.orientation.x = q.x();
-    pose_msg.pose.orientation.y = q.y();
-    pose_msg.pose.orientation.z = q.z();
-    pose_pub_.publish(pose_msg);
-    /* 2. pub fov */
-    visualization_msgs::Marker low_fov, up_fov;
-    low_fov.header.frame_id = up_fov.header.frame_id = mp_.frame_id_;
-    low_fov.header.stamp = up_fov.header.stamp = ros::Time::now();
-    low_fov.ns = up_fov.ns = "fov";
-    low_fov.id = 0;
-    low_fov.id = 1;
-    low_fov.action = up_fov.action = visualization_msgs::Marker::ADD;
+//     Quaterniond q(md_.body2world_.rotation());
+//     pose_msg.pose.orientation.w = q.w();
+//     pose_msg.pose.orientation.x = q.x();
+//     pose_msg.pose.orientation.y = q.y();
+//     pose_msg.pose.orientation.z = q.z();
+//     pose_pub_.publish(pose_msg);
+//     /* 2. pub fov */
+//     visualization_msgs::Marker low_fov, up_fov;
+//     low_fov.header.frame_id = up_fov.header.frame_id = mp_.frame_id_;
+//     low_fov.header.stamp = up_fov.header.stamp = ros::Time::now();
+//     low_fov.ns = up_fov.ns = "fov";
+//     low_fov.id = 0;
+//     low_fov.id = 1;
+//     low_fov.action = up_fov.action = visualization_msgs::Marker::ADD;
     
-    double radius = 1;
+//     double radius = 1;
 
-    Eigen::Vector3d low_fov_pos(0,0,radius * sinf(-7 * M_PI / 180.f) / 2);
-    Eigen::Vector3d up_fov_pos(0,0,radius * sinf(52 * M_PI / 180.f) / 2);
-    Eigen::Vector3d low_fov_pos_world = md_.lidar2world_ * low_fov_pos;
-    Eigen::Vector3d up_fov_pos_world = md_.lidar2world_ * up_fov_pos;
+//     Eigen::Vector3d low_fov_pos(0,0,radius * sinf(-7 * M_PI / 180.f) / 2);
+//     Eigen::Vector3d up_fov_pos(0,0,radius * sinf(52 * M_PI / 180.f) / 2);
+//     Eigen::Vector3d low_fov_pos_world = md_.body2world_ * low_fov_pos;
+//     Eigen::Vector3d up_fov_pos_world = md_.body2world_ * up_fov_pos;
 
-    low_fov.pose.position.x = low_fov_pos_world(0);
-    low_fov.pose.position.y = low_fov_pos_world(1);
-    low_fov.pose.position.z = low_fov_pos_world(2);
-    up_fov.pose.position.x = up_fov_pos_world(0);
-    up_fov.pose.position.y = up_fov_pos_world(1);
-    up_fov.pose.position.z = up_fov_pos_world(2);
+//     low_fov.pose.position.x = low_fov_pos_world(0);
+//     low_fov.pose.position.y = low_fov_pos_world(1);
+//     low_fov.pose.position.z = low_fov_pos_world(2);
+//     up_fov.pose.position.x = up_fov_pos_world(0);
+//     up_fov.pose.position.y = up_fov_pos_world(1);
+//     up_fov.pose.position.z = up_fov_pos_world(2);
     
-    low_fov.pose.orientation.x = up_fov.pose.orientation.x = q.x();
-    low_fov.pose.orientation.y = up_fov.pose.orientation.y = q.y();
-    low_fov.pose.orientation.z = up_fov.pose.orientation.z = q.z();
-    low_fov.pose.orientation.w = up_fov.pose.orientation.w = q.w();
+//     low_fov.pose.orientation.x = up_fov.pose.orientation.x = q.x();
+//     low_fov.pose.orientation.y = up_fov.pose.orientation.y = q.y();
+//     low_fov.pose.orientation.z = up_fov.pose.orientation.z = q.z();
+//     low_fov.pose.orientation.w = up_fov.pose.orientation.w = q.w();
 
-    low_fov.type = up_fov.type = visualization_msgs::Marker::CYLINDER;
-    low_fov.scale.x = radius * cosf(7 * M_PI / 180.f);
-    low_fov.scale.y = radius * cosf(7 * M_PI / 180.f);
-    up_fov.scale.x = radius * cosf(52 * M_PI / 180.f);
-    up_fov.scale.y = radius * cosf(52 * M_PI / 180.f);
-    low_fov.scale.z = 0.1;
-    up_fov.scale.z = 0.1;
-    low_fov.color.r = up_fov.color.r = 0.1f;
-    low_fov.color.a = up_fov.color.a = 0.1f;
+//     low_fov.type = up_fov.type = visualization_msgs::Marker::CYLINDER;
+//     low_fov.scale.x = radius * cosf(7 * M_PI / 180.f);
+//     low_fov.scale.y = radius * cosf(7 * M_PI / 180.f);
+//     up_fov.scale.x = radius * cosf(52 * M_PI / 180.f);
+//     up_fov.scale.y = radius * cosf(52 * M_PI / 180.f);
+//     low_fov.scale.z = 0.1;
+//     up_fov.scale.z = 0.1;
+//     low_fov.color.r = up_fov.color.r = 0.1f;
+//     low_fov.color.a = up_fov.color.a = 0.1f;
 
-    sensor_fov_pub_.publish(low_fov);
-    sensor_fov_pub_.publish(up_fov);
-}
+//     sensor_fov_pub_.publish(low_fov);
+//     sensor_fov_pub_.publish(up_fov);
+// }
 
 void DspMap::publishBoundary()
 {
@@ -330,9 +361,9 @@ void DspMap::publishBoundary()
     boundary.pose.position.z = (md_.ringbuffer_inf_upbound3d_(2) + md_.ringbuffer_inf_lowbound3d_(2)) / 2;
 
     // Set the scale (size) of the boundary
-    boundary.scale.x = md_.ringbuffer_inf_upbound3d_(0) - md_.ringbuffer_inf_lowbound3d_(0);
-    boundary.scale.y = md_.ringbuffer_inf_upbound3d_(1) - md_.ringbuffer_inf_lowbound3d_(1);
-    boundary.scale.z = md_.ringbuffer_inf_upbound3d_(2) - md_.ringbuffer_inf_lowbound3d_(2);
+    boundary.scale.x = (md_.ringbuffer_inf_upbound3d_(0) - md_.ringbuffer_inf_lowbound3d_(0))/2;
+    boundary.scale.y = (md_.ringbuffer_inf_upbound3d_(1) - md_.ringbuffer_inf_lowbound3d_(1))/2;
+    boundary.scale.z = (md_.ringbuffer_inf_upbound3d_(2) - md_.ringbuffer_inf_lowbound3d_(2))/2;
 
     boundary.color.r = 1.0;
     boundary.color.a = 0.1;
@@ -344,12 +375,11 @@ void DspMap::publishBoundary()
 
 void DspMap::visCallback(const ros::TimerEvent &e)
 {
-    publishPoseAndFov();
     publishMap();
     publishFutureStatus();
-    publishParticle();
     publishMapInflate();
     publishBoundary();
+    publishCloud();
 }   
 
 void DspMap::lidarOdomCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg,
@@ -365,30 +395,13 @@ void DspMap::lidarOdomCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg
                                         odom_msg->pose.pose.orientation.x,
                                         odom_msg->pose.pose.orientation.y,
                                         odom_msg->pose.pose.orientation.z);   
-    Eigen::Affine3d body2world; // 机体坐标系在世界坐标系下的表示
-    body2world.translation() << odom_msg->pose.pose.position.x,odom_msg->pose.pose.position.y,odom_msg->pose.pose.position.z;
-    body2world.linear() = body_q.toRotationMatrix();
+    // Eigen::Affine3d body2world; // 机体坐标系在世界坐标系下的表示
+    md_.last_body2world_ = md_.body2world_;
+    md_.body2world_.linear() = body_q.toRotationMatrix();
+    md_.body2world_.translation() << odom_msg->pose.pose.position.x,odom_msg->pose.pose.position.y,odom_msg->pose.pose.position.z;
 
-    md_.last_lidar2world_ = md_.lidar2world_;
-    md_.lidar2world_ = body2world * md_.lidar2body_ ;
-    
     md_.current_cloud_ = latest_cloud;
-    // ROS_WARN("Received cloud size : %d", md_.current_cloud_->size());
-    // clip ground point 
-    // pcl::ExtractIndices<pcl::PointXYZ> cliper;
-    // cliper.setInputCloud(md_.current_cloud_);
-    // pcl::PointIndices indices;
-    // for(size_t i=0; i < md_.current_cloud_->points.size();i++)
-    // {
-    //     // 没定义ground filter height 这个参数，简单用voxel代替
-    //     if(md_.current_cloud_->points[i].z < mp_.voxel_resolution_)
-    //     {
-    //         indices.indices.push_back(i);
-    //     }
-    // }
-    // cliper.setIndices(boost::make_shared<pcl::PointIndices>(indices));
-    // cliper.setNegative(true);
-    // cliper.filter(*(md_.current_cloud_));
+
 
     // voxel filters
     pcl::VoxelGrid<pcl::PointXYZ> vg;
@@ -396,49 +409,102 @@ void DspMap::lidarOdomCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg
     vg.setLeafSize(mp_.voxel_filter_resolution_,mp_.voxel_filter_resolution_,mp_.voxel_filter_resolution_);
     vg.filter(*(md_.current_cloud_));
 
+
     md_.occ_need_update_ = true;
     /*====*/
     // md_.last_update_time_ = md_.current_update_time_;
 }
 
-void DspMap::lidarPoseCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg,
-                                    const geometry_msgs::PoseStampedConstPtr &pose_msg)
+
+
+void DspMap::DepthOdomCallback(const sensor_msgs::ImageConstPtr &img,const nav_msgs::OdometryConstPtr &odom_msg)
 {
+    // std::cout << "here" << std::endl;
+    md_.current_update_time_ = odom_msg->header.stamp;
+    cv_bridge::CvImagePtr cv_ptr;
+    cv_ptr = cv_bridge::toCvCopy(img,img->encoding);
+
+    if(img->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+    {
+        (cv_ptr->image).convertTo(cv_ptr->image,CV_16UC1,mp_.k_depth_scaling_factor_);
+    }
+    cv_ptr->image.copyTo(md_.depth_image_);
+
+    md_.last_body2world_ = md_.body2world_;
+    md_.body2world_.linear() = Quaterniond(odom_msg->pose.pose.orientation.w,
+                                            odom_msg->pose.pose.orientation.x,
+                                            odom_msg->pose.pose.orientation.y,
+                                            odom_msg->pose.pose.orientation.z).toRotationMatrix();
+    md_.body2world_.translation() << odom_msg->pose.pose.position.x,odom_msg->pose.pose.position.y,odom_msg->pose.pose.position.z;
+
+    md_.occ_need_update_ = true;
 
 }
 
+void DspMap::lidarPoseCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg,
+                                    const geometry_msgs::PoseStampedConstPtr &pose_msg)
+{
+    ROS_ERROR("lidar pose not implemented");
+}
+void DspMap::DepthPoseCallback(const sensor_msgs::ImageConstPtr &img, const geometry_msgs::PoseStampedConstPtr &pose_msg)
+{
+    ROS_ERROR("depth pose not implemented");
+}
+
+void DspMap::projectDepthImage()
+{
+    md_.current_cloud_->clear();
+    uint16_t *row_ptr;
+    int cols = md_.depth_image_.cols;
+    int rows = md_.depth_image_.rows;
+    int skip_pix = mp_.skip_pixel_;
+
+    double depth;
+    Eigen::Affine3d camera2world = md_.body2world_ * md_.camera2body_;
+    Eigen::Matrix3d camera_r = camera2world.linear();
+    Eigen::Vector3d camera_t = camera2world.translation();
+
+    if(!mp_.use_depth_filter_)
+    {
+        for(int v=0; v < rows; v+=skip_pix)
+        {
+            row_ptr = md_.depth_image_.ptr<uint16_t>(v);
+            for (int u = 0; u < cols; u+=skip_pix)
+            {
+
+                Eigen::Vector3d proj_pt;
+                depth = (*row_ptr++) / mp_.k_depth_scaling_factor_;
+                proj_pt(0) = (u - mp_.cx_) * depth / mp_.fx_;
+                proj_pt(1) = (v - mp_.cy_) * depth / mp_.fy_;
+                proj_pt(2) = depth;
+
+                proj_pt = camera_r * proj_pt + camera_t;
+
+                if (u == 320 && v == 240)
+                {
+                    // std::cout << "depth: " << depth << std::endl;
+                }
+                md_.current_cloud_->emplace_back(proj_pt(0), proj_pt(1), proj_pt(2));
+            }
+        }
+    }
+    else{
+        ROS_ERROR("depth filter not implemented");
+    }
+
+    md_.last_depth_image_ = md_.depth_image_;   
+}
+
+
 void DspMap::lidarCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 {
-    ROS_INFO("DAD, i have got lidar");
+    ROS_INFO(" i have got lidar");
 }
 
 void DspMap::odomCallback(const nav_msgs::OdometryConstPtr &odom_msg)
 {
-    ROS_INFO("DAD, i have got odom");
+    ROS_INFO(" i have got odom");
 }
-
-/*
-bool GridMap::checkDepthOdomNeedupdate()
-{
-  if (md_.last_occ_update_time_.toSec() < 1.0) // 初始化为0 没有更新过的情况。
-  {
-    md_.last_occ_update_time_ = ros::Time::now();
-  }
-  if (!md_.occ_need_update_) // 
-  {
-    if (md_.flag_have_ever_received_depth_ && (ros::Time::now() - md_.last_occ_update_time_).toSec() > mp_.odom_depth_timeout_)
-    {
-      ROS_ERROR("odom or depth lost! ros::Time::now()=%f, md_.last_occ_update_time_=%f, mp_.odom_depth_timeout_=%f",
-                ros::Time::now().toSec(), md_.last_occ_update_time_.toSec(), mp_.odom_depth_timeout_);
-      md_.flag_depth_odom_timeout_ = true;
-    }
-    return false;
-  }
-  md_.last_occ_update_time_ = ros::Time::now();
-
-  return true;
-}
-*/
 
 inline bool DspMap::checkLidarOdomNeedUpdate()
 {
@@ -474,6 +540,13 @@ void DspMap::updateOccupancyCallback(const ros::TimerEvent &e)
     // // map move 
     // t1 = ros::Time::now();
     // ROS_INFO("moving buffer started!");
+    if(mp_.sensor_type_ == 2) // depth
+    {
+        // ROS_INFO("hrere");
+        projectDepthImage();
+    }
+
+
 
     moveRingBuffer();
     // ROS_INFO("moving map cost time : %f", (ros::Time::now() - t1).toSec());
@@ -499,7 +572,10 @@ void DspMap::updateOccupancyCallback(const ros::TimerEvent &e)
         origin_point.z() = md_.current_cloud_->points[p_seq].z; 
         transformParticleToSensorFrame(origin_point,rotated_point);
         // ROS_INFO("transformParticleToSensorFrame: %f %f %f",rotated_point.x(),rotated_point.y(),rotated_point.z());
-
+        // 检查 origin_point 的坐标是否是 NaN
+        if(std::isnan(origin_point.x()) || std::isnan(origin_point.y()) || std::isnan(origin_point.z())) {
+            continue;  // 如果是 NaN，跳过当前的循环迭代
+        }
         if(inPyramidsAreaInSensorFrame(rotated_point[0],rotated_point[1],rotated_point[2]))
         {
             // Eigen::Vector3d rotate_rotate_point = md_.lidar2world_ * rotated_point;
@@ -511,7 +587,7 @@ void DspMap::updateOccupancyCallback(const ros::TimerEvent &e)
             int pyramid_index = pyramid_index_horizontal * mp_.observation_pyramid_num_vertical_ + pyramid_index_vertical;
             if(pyramid_index < 0 || pyramid_index >= mp_.observation_pyramid_num_)
             {
-                ROS_ERROR("pyramid_index out of range!");
+                // ROS_WARN("pyramid_index out of range!");
                 continue;
             }
             int observation_inner_seq = md_.point_num_in_pyramid[pyramid_index];
@@ -617,7 +693,28 @@ void DspMap::updateOccupancyCallback(const ros::TimerEvent &e)
 
 }
 
+void DspMap::publishCloud()
+{
+    if(cloud_pub_.getNumSubscribers() <= 0)
+    {
+        return ;
+    }
+    sensor_msgs::PointCloud2 cloud_msg;
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    for(auto t : md_.current_cloud_->points)
+    {
+        cloud.push_back(pcl::PointXYZ(t.x,t.y,t.z));
+    }
+    cloud.header.frame_id = mp_.frame_id_;
+    cloud.width = cloud.points.size();
+    cloud.height = 1;
+    cloud.is_dense = true;
+    pcl::toROSMsg(cloud,cloud_msg);
+    cloud_pub_.publish(cloud_msg);
 
+    
+
+}
 
 void DspMap::publishMap()
 {
@@ -656,47 +753,47 @@ void DspMap::publishMap()
 }
 
 
-void DspMap::publishParticle()
-{
-    if(particle_pub_.getNumSubscribers() <= 0)
-    {
-        return ;
-    }
+// void DspMap::publishParticle()
+// {
+//     if(particle_pub_.getNumSubscribers() <= 0)
+//     {
+//         return ;
+//     }
 
-    pcl::PointCloud<pcl::PointXYZI> cloud;
-    double lbz = mp_.enable_virtual_wall_ ? max(md_.ringbuffer_lowbound3d_(2),mp_.virtual_ground_) : md_.ringbuffer_lowbound3d_(2);
-    double ubz = mp_.enable_virtual_wall_ ? min(md_.ringbuffer_upbound3d_(2),mp_.virtual_ceil_) : md_.ringbuffer_upbound3d_(2);
-    if (md_.ringbuffer_upbound3d_(0) - md_.ringbuffer_lowbound3d_(0) > mp_.voxel_resolution_ && (md_.ringbuffer_upbound3d_(1) - md_.ringbuffer_lowbound3d_(1)) > mp_.voxel_resolution_ && (ubz - lbz) > mp_.voxel_resolution_)
-    {
-        for(double xd = md_.ringbuffer_lowbound3d_(0) + mp_.voxel_resolution_ / 2; xd <= md_.ringbuffer_upbound3d_(0); xd += mp_.voxel_resolution_)
-        {
-            for(double yd = md_.ringbuffer_lowbound3d_(1) + mp_.voxel_resolution_ / 2; yd <= md_.ringbuffer_upbound3d_(1); yd += mp_.voxel_resolution_)
-            {
-                for(double zd = md_.ringbuffer_lowbound3d_(2) + mp_.voxel_resolution_ / 2; zd <= md_.ringbuffer_upbound3d_(2); zd += mp_.voxel_resolution_)
-                {
-                    int buf_idx = globalIdx2BufIdx(pos2GlobalIdx(Vector3d(xd,yd,zd)));
-                    for(int i=0;i<mp_.safe_particle_num_in_voxel_;i++)
-                    {
-                        pcl::PointXYZI pt;
-                        pt.x = md_.voxels_with_particles[buf_idx][i][4];
-                        pt.y = md_.voxels_with_particles[buf_idx][i][5];
-                        pt.z = md_.voxels_with_particles[buf_idx][i][6];
-                        pt.intensity = md_.voxels_with_particles[buf_idx][i][7];
-                        cloud.push_back(pt);
-                        // cloud.push_back(pcl::PointXYZ(md_.voxels_with_particles[buf_idx][i][4],md_.voxels_with_particles[buf_idx][i][5],md_.voxels_with_particles[buf_idx][i][6]));
-                    }
-                }
-            }
-        }
-    }
-    cloud.width = cloud.points.size();
-    cloud.height = 1;
-    cloud.is_dense = true;
-    cloud.header.frame_id = mp_.frame_id_;
-    sensor_msgs::PointCloud2 cloud_msg;
-    pcl::toROSMsg(cloud,cloud_msg);
-    particle_pub_.publish(cloud_msg);
-}
+//     pcl::PointCloud<pcl::PointXYZI> cloud;
+//     double lbz = mp_.enable_virtual_wall_ ? max(md_.ringbuffer_lowbound3d_(2),mp_.virtual_ground_) : md_.ringbuffer_lowbound3d_(2);
+//     double ubz = mp_.enable_virtual_wall_ ? min(md_.ringbuffer_upbound3d_(2),mp_.virtual_ceil_) : md_.ringbuffer_upbound3d_(2);
+//     if (md_.ringbuffer_upbound3d_(0) - md_.ringbuffer_lowbound3d_(0) > mp_.voxel_resolution_ && (md_.ringbuffer_upbound3d_(1) - md_.ringbuffer_lowbound3d_(1)) > mp_.voxel_resolution_ && (ubz - lbz) > mp_.voxel_resolution_)
+//     {
+//         for(double xd = md_.ringbuffer_lowbound3d_(0) + mp_.voxel_resolution_ / 2; xd <= md_.ringbuffer_upbound3d_(0); xd += mp_.voxel_resolution_)
+//         {
+//             for(double yd = md_.ringbuffer_lowbound3d_(1) + mp_.voxel_resolution_ / 2; yd <= md_.ringbuffer_upbound3d_(1); yd += mp_.voxel_resolution_)
+//             {
+//                 for(double zd = md_.ringbuffer_lowbound3d_(2) + mp_.voxel_resolution_ / 2; zd <= md_.ringbuffer_upbound3d_(2); zd += mp_.voxel_resolution_)
+//                 {
+//                     int buf_idx = globalIdx2BufIdx(pos2GlobalIdx(Vector3d(xd,yd,zd)));
+//                     for(int i=0;i<mp_.safe_particle_num_in_voxel_;i++)
+//                     {
+//                         pcl::PointXYZI pt;
+//                         pt.x = md_.voxels_with_particles[buf_idx][i][4];
+//                         pt.y = md_.voxels_with_particles[buf_idx][i][5];
+//                         pt.z = md_.voxels_with_particles[buf_idx][i][6];
+//                         pt.intensity = md_.voxels_with_particles[buf_idx][i][7];
+//                         cloud.push_back(pt);
+//                         // cloud.push_back(pcl::PointXYZ(md_.voxels_with_particles[buf_idx][i][4],md_.voxels_with_particles[buf_idx][i][5],md_.voxels_with_particles[buf_idx][i][6]));
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     cloud.width = cloud.points.size();
+//     cloud.height = 1;
+//     cloud.is_dense = true;
+//     cloud.header.frame_id = mp_.frame_id_;
+//     sensor_msgs::PointCloud2 cloud_msg;
+//     pcl::toROSMsg(cloud,cloud_msg);
+//     particle_pub_.publish(cloud_msg);
+// }
 
 
 void DspMap::publishMapInflate()
@@ -760,36 +857,13 @@ void DspMap::publishFutureStatus()
                 {
                     Vector3i global_idx = pos2GlobalIdx(Vector3d(xd,yd,zd));
                     int buf_idx = globalIdx2BufIdx(global_idx);
-
-                    float weight_this = md_.future_status[buf_idx];
-                    if(weight_this > mp_.risk_thresh_)
+                    bool dangerous = getVoxelFutureDangerous(global_idx);
+                    if(dangerous)
                     {
-                        int count = 0;
-                        for(int i = -1; i <= 1; i++)
-                        {
-                            for(int j = -1; j <= 1; j++)
-                            {
-                                for(int k=-1; k <= 1; k++)
-                                {
-                                    Vector3i neighbor_idx = global_idx + Vector3i(i,j,k);
-                                    int neighbor_buf_idx = globalIdx2BufIdx(neighbor_idx);
-                                    float weight_neighbor = md_.future_status[neighbor_buf_idx];
-                                    if(weight_neighbor > mp_.risk_thresh_)
-                                    {
-                                        count ++;
-                                        // weight_this = max(weight_this,weight_neighbor);
-                                    }
-                                }
-                            }
-                        }
-                        if(count < 20){
-                            continue;
-                        }
+                        float weight_this = md_.future_status[buf_idx];
                         int r,g,b;
                         pcl::PointXYZRGB p_future;
-                        // colorAssign(r,g,b,weight_this,0.f,mp_.risk_thresh_,1);
-                        colorAssign(r,g,b,weight_this,0.0f,1.0f,1);
-
+                        colorAssign(r,g,b,weight_this,0.f,1.f,1);
                         p_future.x = xd;
                         p_future.y = yd;
                         p_future.z = zd;
@@ -797,7 +871,44 @@ void DspMap::publishFutureStatus()
                         p_future.g = g;
                         p_future.b = b;
                         cloud_future.push_back(p_future);
-                    }   
+                    }
+                    // float weight_this = md_.future_status[buf_idx];
+                    // if(weight_this > mp_.risk_thresh_)
+                    // {
+                    //     int count = 0;
+                    //     for(int i = -1; i <= 1; i++)
+                    //     {
+                    //         for(int j = -1; j <= 1; j++)
+                    //         {
+                    //             for(int k=-1; k <= 1; k++)
+                    //             {
+                    //                 Vector3i neighbor_idx = global_idx + Vector3i(i,j,k);
+                    //                 int neighbor_buf_idx = globalIdx2BufIdx(neighbor_idx);
+                    //                 float weight_neighbor = md_.future_status[neighbor_buf_idx];
+                    //                 if(weight_neighbor > mp_.risk_thresh_)
+                    //                 {
+                    //                     count ++;
+                    //                     // weight_this = max(weight_this,weight_neighbor);
+                    //                 }
+                    //             }
+                    //         }
+                    //     }
+                    //     if(count < 20){
+                    //         continue;
+                    //     }
+                    //     int r,g,b;
+                    //     pcl::PointXYZRGB p_future;
+                    //     // colorAssign(r,g,b,weight_this,0.f,mp_.risk_thresh_,1);
+                    //     colorAssign(r,g,b,weight_this,0.0f,1.0f,1);
+
+                    //     p_future.x = xd;
+                    //     p_future.y = yd;
+                    //     p_future.z = zd;
+                    //     p_future.r = r;
+                    //     p_future.g = g;
+                    //     p_future.b = b;
+                    //     cloud_future.push_back(p_future);
+                    // }   
                 }
             }
         }
@@ -810,81 +921,81 @@ void DspMap::publishFutureStatus()
     pcl::toROSMsg(cloud_future,cloud_future_msg);
     map_future_pub_.publish(cloud_future_msg);
 
-
 }
 
-int DspMap::getOccupancy(const Vector3d &pos)
+bool DspMap::getOccupancy(const Vector3d &pos)
 {
-    if(!isInBuf(pos))
+    if(!isInBuf(pos)) 
     {
-        return 0;
+        return false;
     }
 
     if(mp_.enable_virtual_wall_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
     {
-        return 1;
+        return true;
     }
 
-    return md_.voxels_objects_number[globalIdx2BufIdx(pos2GlobalIdx(pos))][0] > mp_.occupancy_thresh_ ? 1 : 0;
+    return md_.voxels_objects_number[globalIdx2BufIdx(pos2GlobalIdx(pos))][0] > mp_.occupancy_thresh_ ? true : false;
 }
 
-int DspMap::getOccupancy(const Vector3i &idx)
+bool DspMap::getOccupancy(const Vector3i &idx)
 {
     if(!isInBuf(idx))
     {
-        return 0;
+        return false;
     }
 
     Eigen::Vector3d pos = globalIdx2Pos(idx);
 
     if(mp_.enable_virtual_wall_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
     {
-        return 1;
+        return true;
     }
 
-    return md_.voxels_objects_number[globalIdx2BufIdx(idx)][0] > mp_.occupancy_thresh_ ? 1 : 0;
+    return md_.voxels_objects_number[globalIdx2BufIdx(idx)][0] > mp_.occupancy_thresh_ ? true : false;
 
 }
 
 
 
-int DspMap::getInflateOccupancy(const Vector3d &pos)
+bool DspMap::getInflateOccupancy(const Vector3d &pos)
 {
 
     if(!isInInfBuf(pos))
     {
-        return 0;
+        return false;
     }
     if(mp_.enable_virtual_wall_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
     {
-        return -1;
+        return true;
     }
 
+    return md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0 ? true : false;
 
 
-    return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0) || (getVoxelFutureDangerous(pos)) ? 1 : 0;
+    // return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0) || (getVoxelFutureDangerous(pos)) ? 1 : 0;
     // return int(md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))]) ;
     // return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0) || (getVoxelFutureRisk(pos) > mp_.risk_thresh_) ? 1 : 0;
     // return (md_)
     // return int(md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))]) ;
 }
 
-int DspMap::getInflateOccupancy(const Vector3i &idx)
+bool DspMap::getInflateOccupancy(const Vector3i &idx)
 {
 
-    if(!isInBuf(idx))
+    if(!isInInfBuf(idx))
     {
-        return 0;
+        return false;
     }
     Eigen::Vector3d pos = globalIdx2Pos(idx);
     if(mp_.enable_virtual_wall_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
     {
-        return -1;
+        return true;
     }
-    return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(idx)] > 0) || (getVoxelFutureDangerous(idx)) ? 1 : 0;
+    return md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(idx)] > 0 ? true : false;
 
+    // return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(idx)] > 0) || (getVoxelFutureDangerous(idx)) ? 1 : 0;
     // return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(idx)] > 0) || (getVoxelFutureRisk(idx) > mp_.risk_thresh_) ? 1 : 0;
-
     // return int(md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(idx)]) ;
 }
 
@@ -958,7 +1069,7 @@ bool DspMap::getVoxelFutureDangerous(const Vector3i &idx)
 void DspMap::initMapBoundary()
 {
     mp_.have_initialized_ = true;
-    md_.center_last3i_ = pos2GlobalIdx(md_.lidar2world_.translation());
+    md_.center_last3i_ = pos2GlobalIdx(md_.body2world_.translation());
 
     // l = c - i, u = c + i, u -= (1,1,1)
     md_.ringbuffer_lowbound3i_ = md_.center_last3i_ - mp_.local_update_range3i_;
@@ -1050,7 +1161,7 @@ void DspMap::moveRingBuffer()
         initMapBoundary();
     }
     // 更新新的环形缓冲区边界
-    Vector3i center_new = pos2GlobalIdx(md_.lidar2world_.translation());
+    Vector3i center_new = pos2GlobalIdx(md_.body2world_.translation());
     Vector3i ringbuffer_lowbound3i_new = center_new - mp_.local_update_range3i_;
     Vector3d ringbuffer_lowbound3d_new = ringbuffer_lowbound3i_new.cast<double>() * mp_.voxel_resolution_;
     Vector3i ringbuffer_upbound3i_new = center_new + mp_.local_update_range3i_;
@@ -1329,7 +1440,7 @@ void DspMap::mapUpdate()
                 //                         md_.voxels_with_particles[particle_voxel_index][particle_voxel_inner_index][6]};
                 // Eigen::Vector3d rotated_pt;
                 // transformParticleToSensorFrame(pt,rotated_pt);
-                Eigen::Vector3d lidar_position = md_.lidar2world_.translation();
+                Eigen::Vector3d lidar_position = md_.body2world_.translation();
 
 
                 float px_this = md_.voxels_with_particles[particle_voxel_index][particle_voxel_inner_index][4] - lidar_position(0);
@@ -1419,7 +1530,12 @@ void DspMap::mapAddNewBornParticleByObservation()
         float static_particle_weight_sum = 0.f;
         float dynamic_particle_weight_sum = 0.f;
         float static_or_dynamic_weight_sum = 0.f;
-
+        Eigen::Vector3d p_r(p_corrected.x,p_corrected.y,p_corrected.z);
+        transformParticleToSensorFrame(p_r,p_r);
+        if(!inPyramidsAreaInSensorFrame(p_r(0),p_r(1),p_r(2)))
+        {
+            continue;
+        }
         if(isInBuf(p_corrected.x,p_corrected.y,p_corrected.z))
         {
             
@@ -2091,6 +2207,7 @@ int DspMap::findPointPyramidHorizontalIndexInSensorFrame(float x, float y, float
         return horizontal_index;
     }
     ROS_WARN("horizontal index : %d",horizontal_index);
+    ROS_WARN("x: %f, y: %f, z: %f",x,y,z);
     ROS_WARN("!!!!!! Please use Function ifInPyramidsArea() to filter the points first before using findPointPyramidHorizontalIndex()");
     return -1;
 }
@@ -2105,6 +2222,7 @@ int DspMap::findPointPyramidVerticalIndexInSensorFrame(float x,float y,float z)
         return vertical_index;
     }
     ROS_WARN("vertical index : %d",vertical_index);
+    ROS_WARN("x: %f, y: %f, z: %f",x,y,z);
     ROS_WARN("!!!!!! Please use Function ifInPyramidsAreaInSensorFrame() to filter the points first before using findPyramidVerticalIndexInSensorFrame()");
     return -1;
 }
@@ -2113,7 +2231,7 @@ int DspMap::findPointPyramidVerticalIndexInSensorFrame(float x,float y,float z)
 void DspMap::transformParticleToSensorFrame(const Vector3d &oriPoint,Vector3d& transformPoint)
 {
 
-    transformPoint = md_.lidar2world_.inverse() * oriPoint;
+    transformPoint = md_.body2world_.inverse() * oriPoint;
 }
 
 

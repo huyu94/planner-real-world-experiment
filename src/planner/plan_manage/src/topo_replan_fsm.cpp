@@ -406,7 +406,7 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
     constexpr double time_step = 0.01;
     double t_cur = (ros::Time::now() - info->start_time_).toSec();
     double t_2_3 = info->duration_ * 2 / 3;
-    int traj_risk_step = 0;
+    // int traj_risk_step = 0;
     double traj_risk = 0;
     /*
     1. if in inflate map, emergency stop
@@ -414,17 +414,17 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
     */
     for (double t = t_cur; t < info->duration_; t += time_step)
     {
-        traj_risk_step++;
+        // traj_risk_step++;
         if (t_cur < t_2_3 && t >= t_2_3) // If t_cur < t_2_3, only the first 2/3 partition of the trajectory is considered valid and will get checked.
             break;
         
         Eigen::Vector3d pt = info->position_traj_.evaluateDeBoorT(t);
         
-        if(traj_risk_step >= 10)
-        {
-            traj_risk_step = 0;
-            traj_risk += map->getVoxelFutureRisk(pt);
-        }
+        // if(traj_risk_step >= 10)
+        // {
+        //     traj_risk_step = 0;
+        // }
+        traj_risk += map->getVoxelFutureRisk(pt);
 
 
         if(map->getInflateOccupancy(pt))
@@ -453,6 +453,7 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
             }
             break;
         }
+        // ROS_INFO("traj_risk=%f",traj_risk);
         if(traj_risk > planner_manager_->pp_.traj_risk_thresh_)
         {
             ROS_WARN("current traj risk is too high, replan.");

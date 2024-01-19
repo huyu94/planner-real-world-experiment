@@ -55,7 +55,8 @@ public:
 
     void sortTopoTrajs(std::vector<UniformBspline> &trajs);
     double getTrajRisk(UniformBspline &traj);
-    
+    double getTrajRisk(Eigen::MatrixXd &ctrl_pts);
+
 
     PlanParameters pp_;
     LocalTrajData local_data_;
@@ -67,7 +68,7 @@ public:
 
 
     
-    int best_traj_id_;
+    // int best_traj_id_;
     
 
 

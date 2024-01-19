@@ -273,7 +273,6 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
         bool success = bspline_optimizer_rebound_[i]->BsplineOptimizeTrajRebound(temp_ctrl_pts, ts);
         if(success)
         {
-            // visualization_->displayOptimalList(temp_ctrl_pts, i + 20);
             visualization_->displayTopoPathList(temp_ctrl_pts,i);
             topo_trajs.emplace_back(temp_ctrl_pts,3,ts);
         }
@@ -295,11 +294,12 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
     pos.setPhysicalLimits(pp_.max_vel_,pp_.max_acc_,pp_.feasibility_tolerance_);
     double ratio;
     bool flag_step_2_success = true;
+    Eigen::MatrixXd optimal_control_points;
+
     if(!pos.checkFeasibility(ratio,false))
     {
         cout << "Need to reallocate time." << endl;
 
-        Eigen::MatrixXd optimal_control_points;
         flag_step_2_success = refineTrajAlgo(pos, start_end_derivatives, ratio, ts, optimal_control_points);
         if (flag_step_2_success)
         {
@@ -313,6 +313,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
         continuous_failures_count_++;
         return false;
     }
+    visualization_->displayOptimalList(optimal_control_points, 0);
 
     // ROS_INFO("finish refine, start update traj info");
 
@@ -826,6 +827,18 @@ double PlannerManager::getTrajRisk(UniformBspline &traj)
 {
     double risk = 0;
     Eigen::MatrixXd ctrl_pts = traj.getControlPoint();
+    for(int i = 0; i < ctrl_pts.cols(); i ++)
+    {
+        Eigen::Vector3d ps = ctrl_pts.col(i);
+        risk += dsp_map_->getVoxelFutureRisk(ps);
+    }
+    return risk * pp_.risk_weight_;
+}
+
+
+double PlannerManager::getTrajRisk(Eigen::MatrixXd &ctrl_pts)
+{
+    double risk = 0;
     for(int i = 0; i < ctrl_pts.cols(); i ++)
     {
         Eigen::Vector3d ps = ctrl_pts.col(i);

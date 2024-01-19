@@ -152,7 +152,7 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
 
         pt = getSample();
         ++sample_num;
-        if(dsp_map_->getInflateOccupancy(pt))
+        if(dsp_map_->getInflateOccupancy(pt) || dsp_map_->getVoxelFutureDangerous(pt))
         {
             sample_time += (ros::Time::now() - t1).toSec();
             continue;
@@ -282,7 +282,7 @@ bool TopoPRM::lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Ei
         pt_id(0) = ray_pt(0) + offset_(0);
         pt_id(1) = ray_pt(1) + offset_(1);
         pt_id(2) = ray_pt(2) + offset_(2);
-        if(dsp_map_->getInflateOccupancy(pt_id))
+        if((dsp_map_->getInflateOccupancy(pt_id)) || dsp_map_->getVoxelFutureDangerous(pt_id))
         {
             return false;
         }
@@ -538,16 +538,36 @@ void TopoPRM::shortcutPath(vector<Eigen::Vector3d> path, int path_id, int iter_n
 
 
         /* visibiliry path shortening */
-        Eigen::Vector3d colli_pt, grad,dir,push_dir;
+
+        // Eigen::Vector3d last_pt, new_pt;
+        Eigen::Vector3d colli_pt, grad,dir,push_dir, temp_dir;
+        int last_dis_id = 1;
         double risk;
         short_path.clear();
         short_path.push_back(dis_path.front()); // 先加上起始点
+        
         for(int i=1;i<dis_path.size();i++)
         {
             if(lineVisib(short_path.back(),dis_path[i], colli_pt, path_id))
             {
                 continue;
             }
+
+            
+            dir = (dis_path[i] - short_path.back()).normalized();
+            double min_cos = 1000.0;
+            for(int j = last_dis_id; j < i; j++)
+            {
+                temp_dir = (dis_path[j] - short_path.back()).normalized();
+                double cos = fabs(dir.dot(temp_dir));
+                if(cos < min_cos)
+                {
+                    min_cos = cos;
+                    last_dis_id = j;
+                }
+            }
+            push_dir = temp_dir;
+            colli_pt = colli_pt + resolution_ * push_dir;
 
             // risk = dsp_map_->getVoxelFutureRisk(colli_pt);
             // edt_environment_->evaluateEDTWithGrad(colli_pt, -1, dist, grad);
@@ -773,3 +793,4 @@ void TopoPRM::depthFirstSearch(vector<GraphNode::Ptr>& vis)
     }
 
 }
+
