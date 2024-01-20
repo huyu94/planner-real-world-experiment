@@ -114,8 +114,7 @@ Visualization Manager:
       Marker Topic: /dynamic_map_generator/global_cylinders_state
       Name: global_obstacle_shape
       Namespaces:
-        "": true
-        velocity: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Group
@@ -293,8 +292,8 @@ Visualization Manager:
             - Alpha: 1
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
-                Max Value: 2.5
-                Min Value: -0.10000000149011612
+                Max Value: 1.899999976158142
+                Min Value: -0.9000000357627869
                 Value: true
               Axis: Z
               Channel Name: intensity
@@ -302,7 +301,7 @@ Visualization Manager:
               Color: 255; 255; 255
               Color Transformer: AxisColor
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Min Color: 0; 0; 0
@@ -317,7 +316,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
           Enabled: true
           Name: Mapping
         - Class: rviz/Group
@@ -496,7 +495,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 28.252113342285156
+      Distance: 19.25302505493164
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -504,17 +503,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.4873549938201904
-        Y: 1.5511045455932617
+        X: 3.288011312484741
+        Y: 2.5194027423858643
         Z: -1.6305275494232774e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3797963857650757
+      Pitch: 1.23979651927948
       Target Frame: <Fixed Frame>
-      Yaw: 1.4579112529754639
+      Yaw: 1.4879112243652344
     Saved:
       - Class: rviz/FPS
         Enable Stereo Rendering:
