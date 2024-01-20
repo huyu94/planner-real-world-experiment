@@ -14,7 +14,7 @@ particle_map:
   local_update_range_x: 5
   local_update_range_y: 5
   local_update_range_z: 1.5
-  inf_grid: 1
+  inf_grid: 2
   enable_virtual_wall: true
   virtual_ceil: 3.0
   virtual_ground: -0.1

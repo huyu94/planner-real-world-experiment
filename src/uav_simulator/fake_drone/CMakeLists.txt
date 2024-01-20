@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(poscmd_2_odom)
+project(fake_drone)
 
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CXX_FLAGS "-std=c++11")
