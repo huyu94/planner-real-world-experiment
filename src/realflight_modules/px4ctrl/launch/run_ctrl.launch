@@ -5,11 +5,10 @@
 			
 			<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
 			<!-- <remap from="~odom" to="/Odometry"/> -->
-			<remap from="/robot/dlio/odom_node/odom"/>
+		<remap from="/robot/dlio/odom_node/odom"/>
 			
 		<remap from="~cmd" to="/position_cmd" />
 
         <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
 	</node>
- 
 </launch>
