@@ -11,5 +11,4 @@
 
         <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
 	</node>
- 
 </launch>

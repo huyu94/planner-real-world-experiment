@@ -85,7 +85,7 @@
         <param name="manager/control_points_distance" value="0.4" type="double" />
         <param name="manager/feasibility_tolerance" value="0.05" type="double" />
         <param name="manager/planning_horizon" value="$(arg planning_horizon)" type="double" />
-        <param name="manager/risk_weight" value="100000.0" />
+        <param name="manager/risk_weight" value="1000.0" />
         <param name="manager/traj_risk_thresh" value="4.0" />
 
 
