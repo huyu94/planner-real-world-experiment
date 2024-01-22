@@ -22,7 +22,7 @@
         <arg name="max_acc" value="3.0" />
 
         <!--always set to 1.5 times grater than sensing horizen-->
-        <arg name="planning_horizon" value="8.0" />
+        <arg name="planning_horizon" value="4.5" />
 
         <!-- 1: use 2D Nav Goal to select goal  -->
         <!-- 2: use global waypoints below  -->
@@ -73,5 +73,6 @@
         <param name="tf45" value="false"/>
     </node>
 
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find plan_manage)/rviz/default.rviz" required="true" />
 
 </launch>

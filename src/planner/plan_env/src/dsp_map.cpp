@@ -925,17 +925,8 @@ void DspMap::publishFutureStatus()
 
 bool DspMap::getOccupancy(const Vector3d &pos)
 {
-    if(!isInBuf(pos)) 
-    {
-        return false;
-    }
-
-    if(mp_.enable_virtual_wall_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
-    {
-        return true;
-    }
-
-    return md_.voxels_objects_number[globalIdx2BufIdx(pos2GlobalIdx(pos))][0] > mp_.occupancy_thresh_ ? true : false;
+    Eigen::Vector3i idx = pos2GlobalIdx(pos);
+    return getOccupancy(idx);
 }
 
 bool DspMap::getOccupancy(const Vector3i &idx)
@@ -960,24 +951,8 @@ bool DspMap::getOccupancy(const Vector3i &idx)
 
 bool DspMap::getInflateOccupancy(const Vector3d &pos)
 {
-
-    if(!isInInfBuf(pos))
-    {
-        return false;
-    }
-    if(mp_.enable_virtual_wall_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
-    {
-        return true;
-    }
-
-    return md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0 ? true : false;
-
-
-    // return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0) || (getVoxelFutureDangerous(pos)) ? 1 : 0;
-    // return int(md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))]) ;
-    // return (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))] > 0) || (getVoxelFutureRisk(pos) > mp_.risk_thresh_) ? 1 : 0;
-    // return (md_)
-    // return int(md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))]) ;
+    Eigen::Vector3i idx = pos2GlobalIdx(pos);
+    return getInflateOccupancy(idx);
 }
 
 bool DspMap::getInflateOccupancy(const Vector3i &idx)
@@ -1001,13 +976,8 @@ bool DspMap::getInflateOccupancy(const Vector3i &idx)
 
 double DspMap::getVoxelFutureRisk(const Vector3d &pos)
 {
-    double acc_risk = 0;
-    if(isInBuf(pos))
-    {
-        int buf_idx = globalIdx2BufIdx(pos2GlobalIdx(pos));
-        acc_risk = md_.future_status[buf_idx];
-    }
-    return acc_risk;
+    Eigen::Vector3i idx = pos2GlobalIdx(pos);
+    return getVoxelFutureRisk(idx);
 }
 
 double DspMap::getVoxelFutureRisk(const Vector3i& idx)

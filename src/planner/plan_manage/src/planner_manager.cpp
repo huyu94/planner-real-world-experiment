@@ -91,13 +91,13 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
 
             if (!flag_randomPolyTraj)
             {
-                std::cout << "one segment traj" << std::endl;
+                // std::cout << "one segment traj" << std::endl;
                 gl_traj = PolynomialTraj::one_segment_traj_gen(start_pt, start_vel, start_acc, local_target_pt, local_target_vel, Eigen::Vector3d::Zero(), time);
-                std::cout << "one segment traj end" << std::endl;
+                // std::cout << "one segment traj end" << std::endl;
             }
             else
             {
-                std::cout << "mini snap traj " << std::endl;
+                // std::cout << "mini snap traj " << std::endl;
                 Eigen::Vector3d horizen_dir = ((start_pt - local_target_pt).cross(Eigen::Vector3d(0, 0, 1))).normalized();
                 Eigen::Vector3d vertical_dir = ((start_pt - local_target_pt).cross(horizen_dir)).normalized();
                 Eigen::Vector3d random_inserted_pt = (start_pt + local_target_pt) / 2 +
@@ -110,13 +110,13 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
                 Eigen::VectorXd t(2);
                 t(0) = t(1) = time / 2;
                 gl_traj = PolynomialTraj::minSnapTraj(pos, start_vel, local_target_vel, start_acc, Eigen::Vector3d::Zero(), t);
-                std::cout << "mini snap traj end" << std::endl;
+                // std::cout << "mini snap traj end" << std::endl;
             }
 
             double t;
             bool flag_too_far;
             ts *= 1.5; // ts will be divided by 1.5 in the next
-            std::cout << "start expand control points " << std::endl;
+            // std::cout << "start expand control points " << std::endl;
             do
             {
                 ts /= 1.5;
@@ -135,7 +135,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
                     point_set.push_back(pt);
                 }
             } while (flag_too_far || point_set.size() < 7); // To make sure the initial path has enough points.
-            std::cout << "end expand control points " << std::endl;
+            // std::cout << "end expand control points " << std::endl;
             t -= ts;
             start_end_derivatives.push_back(gl_traj.evaluateVel(0));
             start_end_derivatives.push_back(local_target_vel);
@@ -147,7 +147,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
 
             double t;
             double t_cur = (ros::Time::now() - local_data_.start_time_).toSec();
-            std::cout << "start pseudo_arc_length" << std::endl;
+            // std::cout << "start pseudo_arc_length" << std::endl;
             vector<double> pseudo_arc_length;
             vector<Eigen::Vector3d> segment_point;
             pseudo_arc_length.push_back(0.0);
@@ -162,7 +162,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
             t -= ts;
 
             double poly_time = (local_data_.position_traj_.evaluateDeBoorT(t) - local_target_pt).norm() / pp_.max_vel_ * 2;
-            std::cout << "start one_segment_traj_gen" << std::endl;
+            // std::cout << "start one_segment_traj_gen" << std::endl;
 
             if (poly_time > ts)
             {
@@ -186,7 +186,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
                     }
                 }
             }
-            std::cout << "end one_segment_traj_gen" << std::endl;
+            // std::cout << "end one_segment_traj_gen" << std::endl;
 
             double sample_length = 0;
             double cps_dist = pp_.ctrl_pt_dist * 1.5; // cps_dist will be divided by 1.5 in the next
@@ -211,7 +211,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
                 point_set.push_back(local_target_pt);
             } while (point_set.size() < 7); // If the start point is very close to end point, this will help
 
-            std::cout << "end expand control points" << std::endl;  
+            // std::cout << "end expand control points" << std::endl;  
             start_end_derivatives.push_back(local_data_.velocity_traj_.evaluateDeBoorT(t_cur));
             start_end_derivatives.push_back(local_target_vel);
             start_end_derivatives.push_back(local_data_.acceleration_traj_.evaluateDeBoorT(t_cur));
@@ -224,9 +224,9 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
             }
         }
     } while (flag_regenerate);
-    cout << "initialize control point success " << endl;
+    // cout << "initialize control point success " << endl;
 
-    visualization_->displayControlPoints(point_set, 0.2,Eigen::Vector4d(0,0.5,0.5,1.0), 0);
+    // visualization_->displayControlPoints(point_set, 0.2,Eigen::Vector4d(0,0.5,0.5,1.0), 0);
 
     Eigen::MatrixXd ctrl_pts;
     UniformBspline::parameterizeToBspline(ts,point_set,start_end_derivatives,ctrl_pts);
@@ -238,63 +238,79 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
 
     topo_prm_->findTopoPaths(start_pt, local_target_pt, start_pts, end_pts, graph,
                             raw_paths, filtered_paths, select_paths);
-
-    // ROS_INFO("find topo paths finished !");
-    vector<vector<Eigen::Vector3d>> guide_pts;
-    // ROS_INFO("topo path size : %d", select_paths.size());
+    
+    vector<Eigen::Vector3d> guide_pts;
 
     vector<UniformBspline> topo_trajs;
-    // if(pp_.optimize_parallel_)
-    // {
-        
-    // }
-    // else
-    // {
 
-    // }
+    Eigen::MatrixXd optimal_control_points;
+    vector<vector<Eigen::Vector3d>> vis_guide_pts;
+    vis_guide_pts.push_back(point_set);
+    vector<vector<Eigen::Vector3d>> vis_trajs;
+    double min_cost = 9999999.0;
+
     for(int i=0;i<select_paths.size();i++)
     {
-        Eigen::MatrixXd temp_ctrl_pts = ctrl_pts;
 
-        guide_pts.push_back(topo_prm_->pathToGuidePts(select_paths[i], temp_ctrl_pts.cols() - 2));
-        visualization_->displayControlPoints(guide_pts.back(), 0.2,Eigen::Vector4d(0.5,0.5,0.5,1.0), i + 1);
-        guide_pts[i].pop_back();
-        guide_pts[i].pop_back();
-        guide_pts[i].erase(guide_pts[i].begin(),guide_pts[i].begin() + 2);
+        /* 1. set guide control points */
+        Eigen::MatrixXd temp_ctrl_pts = ctrl_pts;
+        guide_pts = topo_prm_->pathToGuidePts(select_paths[i], temp_ctrl_pts.cols() - 2);
+        // visualization_->displayControlPoints(guide_pts.back(), 0.2,Eigen::Vector4d(0.5,0.5,0.5,1.0), i + 1);
+        guide_pts.pop_back();
+        guide_pts.pop_back();
+        guide_pts.erase(guide_pts.begin(),guide_pts.begin() + 2);
         if (guide_pts[i].size() != int(temp_ctrl_pts.cols()) - 6)
         {
             ROS_WARN("what guide");
             ROS_WARN("guide_pts size : %d", guide_pts[i].size());
             ROS_WARN("ctrl_pts size : %d", temp_ctrl_pts.cols());            
         } 
-        bspline_optimizer_rebound_[i]->setGuidePath(guide_pts[i]);
-        bspline_optimizer_rebound_[i]->initControlPoints(temp_ctrl_pts,true);
 
+        /* 2. start guide optimization */
+        bspline_optimizer_rebound_[i]->setGuidePath(guide_pts);
+        bspline_optimizer_rebound_[i]->initControlPoints(temp_ctrl_pts,true);
         bool success = bspline_optimizer_rebound_[i]->BsplineOptimizeTrajRebound(temp_ctrl_pts, ts);
-        if(success)
-        {
-            visualization_->displayTopoPathList(temp_ctrl_pts,i);
-            topo_trajs.emplace_back(temp_ctrl_pts,3,ts);
-        }
-        else
+        // if failed 
+        if(!success)
         {
             ROS_ERROR("rebound fail");
+            continue;
         }
+        // success 
+        UniformBspline traj = UniformBspline(temp_ctrl_pts, 3, ts);
+        double cost = calcTrajCost(traj);
+        if(cost < min_cost)
+        {
+            min_cost = cost;
+            optimal_control_points = temp_ctrl_pts;
+        }
+
+        /* 3. add topo path to display */
+        vis_guide_pts.push_back(guide_pts);
+        point_set.clear();
+        for(int j=0; j < temp_ctrl_pts.cols(); j++)
+        {
+            point_set.push_back(temp_ctrl_pts.col(j));
+        }
+        vis_trajs.push_back(point_set);
     }
-    // ROS_INFO("optimize finished ! start sort ");
-    if(topo_trajs.size() == 0)
+    
+    // no topological pathes 
+    if(vis_trajs.size() == 0)
     {
         ROS_WARN("no trajectory!");
         return false;
     }
-    sortTopoTrajs(topo_trajs);
-    // ROS_INFO("finish sort , start refine");
 
-    UniformBspline pos = topo_trajs[0];
+    // display 
+    visualization_->displayMultiInitPathList(vis_trajs,0.2);
+    visualization_->displayMultiInitControlPoints(vis_guide_pts,0.2);
+
+
+    UniformBspline pos = UniformBspline(optimal_control_points,3,ts);
     pos.setPhysicalLimits(pp_.max_vel_,pp_.max_acc_,pp_.feasibility_tolerance_);
     double ratio;
     bool flag_step_2_success = true;
-    Eigen::MatrixXd optimal_control_points;
 
     if(!pos.checkFeasibility(ratio,false))
     {
@@ -332,113 +348,118 @@ void PlannerManager::sortTopoTrajs(std::vector<UniformBspline> &trajs)
 {
     sort(trajs.begin(),trajs.end(),
         [&](UniformBspline& tj1, UniformBspline& tj2){
-            return tj1.getJerk() + getTrajRisk(tj1) < tj2.getJerk() + getTrajRisk(tj2);
+            double cost1 = tj1.getJerk() + pp_.traj_risk_thresh_ * getTrajRisk(tj1);
+            double cost2 = tj2.getJerk() + pp_.traj_risk_thresh_ * getTrajRisk(tj2);
+            std::cout << "cost1 : " << cost1 << std::endl;
+            std::cout << "cost2 : " << cost2 << std::endl;
+            return cost1 < cost2;
             });
 }
 
 
 
-bool PlannerManager::reboundTest(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d local_target_pt, Eigen::Vector3d local_target_vel, bool flag_polyInit, bool flag_randomPolyTraj)
-{
-    double ts = (start_pt - local_target_pt).norm() > 0.1 ? pp_.ctrl_pt_dist / pp_.max_vel_ * 1.2 : pp_.ctrl_pt_dist / pp_.max_vel_ * 5; // pp_.ctrl_pt_dist / pp_.max_vel_ is too tense, and will surely exceed the acc/vel limits
-    vector<Eigen::Vector3d> point_set, start_end_derivatives;
+// bool PlannerManager::reboundTest(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d local_target_pt, Eigen::Vector3d local_target_vel, bool flag_polyInit, bool flag_randomPolyTraj)
+// {
+//     double ts = (start_pt - local_target_pt).norm() > 0.1 ? pp_.ctrl_pt_dist / pp_.max_vel_ * 1.2 : pp_.ctrl_pt_dist / pp_.max_vel_ * 5; // pp_.ctrl_pt_dist / pp_.max_vel_ is too tense, and will surely exceed the acc/vel limits
+//     vector<Eigen::Vector3d> point_set, start_end_derivatives;
 
-    PolynomialTraj gl_traj;
+//     PolynomialTraj gl_traj;
 
-    double dist = (start_pt - local_target_pt).norm();
-    double time = pow(pp_.max_vel_, 2) / pp_.max_acc_ > dist ? sqrt(dist / pp_.max_acc_) : (dist - pow(pp_.max_vel_, 2) / pp_.max_acc_) / pp_.max_vel_ + 2 * pp_.max_vel_ / pp_.max_acc_;
+//     double dist = (start_pt - local_target_pt).norm();
+//     double time = pow(pp_.max_vel_, 2) / pp_.max_acc_ > dist ? sqrt(dist / pp_.max_acc_) : (dist - pow(pp_.max_vel_, 2) / pp_.max_acc_) / pp_.max_vel_ + 2 * pp_.max_vel_ / pp_.max_acc_;
 
-    if (!flag_randomPolyTraj)
-    {
-        gl_traj = PolynomialTraj::one_segment_traj_gen(start_pt, start_vel, start_acc, local_target_pt, local_target_vel, Eigen::Vector3d::Zero(), time);
-    }
-    else
-    {
-        Eigen::Vector3d horizen_dir = ((start_pt - local_target_pt).cross(Eigen::Vector3d(0, 0, 1))).normalized();
-        Eigen::Vector3d vertical_dir = ((start_pt - local_target_pt).cross(horizen_dir)).normalized();
-        Eigen::Vector3d random_inserted_pt = (start_pt + local_target_pt) / 2 +
-                                                (((double)rand()) / RAND_MAX - 0.5) * (start_pt - local_target_pt).norm() * horizen_dir * 0.8 * (-0.978 / (continuous_failures_count_ + 0.989) + 0.989) +
-                                                (((double)rand()) / RAND_MAX - 0.5) * (start_pt - local_target_pt).norm() * vertical_dir * 0.4 * (-0.978 / (continuous_failures_count_ + 0.989) + 0.989);
-        Eigen::MatrixXd pos(3, 3);
-        pos.col(0) = start_pt;
-        pos.col(1) = random_inserted_pt;
-        pos.col(2) = local_target_pt;
-        Eigen::VectorXd t(2);
-        t(0) = t(1) = time / 2;
-        gl_traj = PolynomialTraj::minSnapTraj(pos, start_vel, local_target_vel, start_acc, Eigen::Vector3d::Zero(), t);
-    }
+//     if (!flag_randomPolyTraj)
+//     {
+//         gl_traj = PolynomialTraj::one_segment_traj_gen(start_pt, start_vel, start_acc, local_target_pt, local_target_vel, Eigen::Vector3d::Zero(), time);
+//     }
+//     else
+//     {
+//         Eigen::Vector3d horizen_dir = ((start_pt - local_target_pt).cross(Eigen::Vector3d(0, 0, 1))).normalized();
+//         Eigen::Vector3d vertical_dir = ((start_pt - local_target_pt).cross(horizen_dir)).normalized();
+//         Eigen::Vector3d random_inserted_pt = (start_pt + local_target_pt) / 2 +
+//                                                 (((double)rand()) / RAND_MAX - 0.5) * (start_pt - local_target_pt).norm() * horizen_dir * 0.8 * (-0.978 / (continuous_failures_count_ + 0.989) + 0.989) +
+//                                                 (((double)rand()) / RAND_MAX - 0.5) * (start_pt - local_target_pt).norm() * vertical_dir * 0.4 * (-0.978 / (continuous_failures_count_ + 0.989) + 0.989);
+//         Eigen::MatrixXd pos(3, 3);
+//         pos.col(0) = start_pt;
+//         pos.col(1) = random_inserted_pt;
+//         pos.col(2) = local_target_pt;
+//         Eigen::VectorXd t(2);
+//         t(0) = t(1) = time / 2;
+//         gl_traj = PolynomialTraj::minSnapTraj(pos, start_vel, local_target_vel, start_acc, Eigen::Vector3d::Zero(), t);
+//     }
 
-    double t;
-    bool flag_too_far;
-    ts *= 1.5; // ts will be divided by 1.5 in the next
-    do
-    {
-        ts /= 1.5;
-        point_set.clear();
-        flag_too_far = false;
-        Eigen::Vector3d last_pt = gl_traj.evaluate(0);
-        for (t = 0; t < time; t += ts)
-        {
-            Eigen::Vector3d pt = gl_traj.evaluate(t);
-            if ((last_pt - pt).norm() > pp_.ctrl_pt_dist * 1.5)
-            {
-                flag_too_far = true;
-                break;
-            }
-            last_pt = pt;
-            point_set.push_back(pt);
-        }
-    } while (flag_too_far || point_set.size() < 7); // To make sure the initial path has enough points.
-    t -= ts;
-    start_end_derivatives.push_back(gl_traj.evaluateVel(0));
-    start_end_derivatives.push_back(local_target_vel);
-    start_end_derivatives.push_back(gl_traj.evaluateAcc(0));
-    start_end_derivatives.push_back(gl_traj.evaluateAcc(t));
+//     double t;
+//     bool flag_too_far;
+//     ts *= 1.5; // ts will be divided by 1.5 in the next
+//     do
+//     {
+//         ts /= 1.5;
+//         point_set.clear();
+//         flag_too_far = false;
+//         Eigen::Vector3d last_pt = gl_traj.evaluate(0);
+//         for (t = 0; t < time; t += ts)
+//         {
+//             Eigen::Vector3d pt = gl_traj.evaluate(t);
+//             if ((last_pt - pt).norm() > pp_.ctrl_pt_dist * 1.5)
+//             {
+//                 flag_too_far = true;
+//                 break;
+//             }
+//             last_pt = pt;
+//             point_set.push_back(pt);
+//         }
+//     } while (flag_too_far || point_set.size() < 7); // To make sure the initial path has enough points.
+//     t -= ts;
+//     start_end_derivatives.push_back(gl_traj.evaluateVel(0));
+//     start_end_derivatives.push_back(local_target_vel);
+//     start_end_derivatives.push_back(gl_traj.evaluateAcc(0));
+//     start_end_derivatives.push_back(gl_traj.evaluateAcc(t));
 
-    visualization_->displayControlPoints(point_set, 0.2,Eigen::Vector4d(0,0.5,0.5,1.0), 0);
 
-    Eigen::MatrixXd ctrl_pts;
-    UniformBspline::parameterizeToBspline(ts,point_set,start_end_derivatives,ctrl_pts);
+//     visualization_->displayControlPoints(point_set, 0.2,Eigen::Vector4d(0,0.5,0.5,1.0), 0);
 
-    // plan_data_.clearTopoPaths();
-    list<GraphNode::Ptr>            graph;
-    vector<vector<Eigen::Vector3d>> raw_paths, filtered_paths, select_paths;
-    vector<Eigen::Vector3d> start_pts, end_pts;
+//     Eigen::MatrixXd ctrl_pts;
+//     UniformBspline::parameterizeToBspline(ts,point_set,start_end_derivatives,ctrl_pts);
 
-    topo_prm_->findTopoPaths(start_pt, local_target_pt, start_pts, end_pts, graph,
-                            raw_paths, filtered_paths, select_paths);
+//     // plan_data_.clearTopoPaths();
+//     list<GraphNode::Ptr>            graph;
+//     vector<vector<Eigen::Vector3d>> raw_paths, filtered_paths, select_paths;
+//     vector<Eigen::Vector3d> start_pts, end_pts;
 
-    vector<vector<Eigen::Vector3d>> guide_pts;
-    for(int i=0;i<select_paths.size();i++)
-    {
-        guide_pts.push_back(topo_prm_->pathToGuidePts(select_paths[i], ctrl_pts.cols() - 2));
-        visualization_->displayControlPoints(guide_pts.back(), 0.2,Eigen::Vector4d(0.5,0.5,0.5,1.0), i + 1);
-        guide_pts[i].pop_back();
-        guide_pts[i].pop_back();
-        guide_pts[i].erase(guide_pts[i].begin(),guide_pts[i].begin() + 2);
-        if (guide_pts[i].size() != int(ctrl_pts.cols()) - 6)
-        {
-            ROS_WARN("what guide");
-            ROS_WARN("guide_pts size : %d", guide_pts[i].size());
-            ROS_WARN("ctrl_pts size : %d", ctrl_pts.cols());            
-        } 
-        bspline_optimizer_rebound_[i]->setGuidePath(guide_pts[i]);
-        bspline_optimizer_rebound_[i]->initControlPoints(ctrl_pts,true);
+//     topo_prm_->findTopoPaths(start_pt, local_target_pt, start_pts, end_pts, graph,
+//                             raw_paths, filtered_paths, select_paths);
 
-        bool success = bspline_optimizer_rebound_[i]->BsplineOptimizeTrajRebound(ctrl_pts, ts);
-        if(success)
-        {
-            // visualization_->displayOptimalList(ctrl_pts, i + 20);
-        }
-        else
-        {
-            ROS_ERROR("rebound fail");
-        }
-    }
+//     vector<vector<Eigen::Vector3d>> guide_pts;
+//     for(int i=0;i<select_paths.size();i++)
+//     {
+//         guide_pts.push_back(topo_prm_->pathToGuidePts(select_paths[i], ctrl_pts.cols() - 2));
+//         visualization_->displayControlPoints(guide_pts.back(), 0.2,Eigen::Vector4d(0.5,0.5,0.5,1.0), i + 1);
+//         guide_pts[i].pop_back();
+//         guide_pts[i].pop_back();
+//         guide_pts[i].erase(guide_pts[i].begin(),guide_pts[i].begin() + 2);
+//         if (guide_pts[i].size() != int(ctrl_pts.cols()) - 6)
+//         {
+//             ROS_WARN("what guide");
+//             ROS_WARN("guide_pts size : %d", guide_pts[i].size());
+//             ROS_WARN("ctrl_pts size : %d", ctrl_pts.cols());            
+//         } 
+//         bspline_optimizer_rebound_[i]->setGuidePath(guide_pts[i]);
+//         bspline_optimizer_rebound_[i]->initControlPoints(ctrl_pts,true);
 
-    return true;
+//         bool success = bspline_optimizer_rebound_[i]->BsplineOptimizeTrajRebound(ctrl_pts, ts);
+//         if(success)
+//         {
+//             // visualization_->displayOptimalList(ctrl_pts, i + 20);
+//         }
+//         else
+//         {
+//             ROS_ERROR("rebound fail");
+//         }
+//     }
 
-}
+//     return true;
+
+// }
 
 
 
@@ -845,4 +866,20 @@ double PlannerManager::getTrajRisk(Eigen::MatrixXd &ctrl_pts)
         risk += dsp_map_->getVoxelFutureRisk(ps);
     }
     return risk * pp_.risk_weight_;
+}
+
+double PlannerManager::calcTrajCost(UniformBspline &traj)
+{
+    double jerk = traj.getJerk();
+    double risk = pp_.traj_risk_thresh_ * getTrajRisk(traj);
+    cout << "jerk : " << jerk << endl;
+    cout << "risk : " << risk << endl;
+    return jerk + risk;
+}
+void PlannerManager::drawSampleBox()
+{
+    Eigen::Vector3d pos, scale;
+    Eigen::Quaterniond q;
+    topo_prm_->getBox(pos,scale,q);
+    visualization_->displayTopoSampleBox(pos,scale,q,0);
 }

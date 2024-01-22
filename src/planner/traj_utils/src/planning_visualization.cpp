@@ -12,8 +12,9 @@ using std::endl;
     init_list_pub = nh.advertise<visualization_msgs::Marker>("init_list", 2);
     optimal_list_pub = nh.advertise<visualization_msgs::Marker>("optimal_list", 2);
     a_star_list_pub = nh.advertise<visualization_msgs::Marker>("a_star_list", 20);
-    control_point_pub = nh.advertise<visualization_msgs::Marker>("control_point", 2);
+    init_control_pub = nh.advertise<visualization_msgs::Marker>("control_point", 2);
     topo_list_pub = nh.advertise<visualization_msgs::Marker>("topo_list",5);
+    topo_sample_pub = nh.advertise<visualization_msgs::Marker>("topo_sample",5);
     
     colorMap = {
       Eigen::Vector4d(0.6, 0.4, 0, 1), // Red
@@ -200,7 +201,8 @@ using std::endl;
 
     for ( int id=0; id<init_trajs.size(); id++ )
     {
-      Eigen::Vector4d color(0, 0, 1, 0.7);
+      // Eigen::Vector4d color(0, 0, 1, 0.7);
+      Eigen::Vector4d color = colorMap[id];
       displayMarkerList(init_list_pub, init_trajs[id], scale, color, id, false);
       ros::Duration(0.001).sleep();
       last_nums++;
@@ -263,6 +265,33 @@ using std::endl;
 
 
 
+  void PlanningVisualization::displayTopoSampleBox(Eigen::Vector3d translation, Eigen::Vector3d scale, Eigen::Quaterniond q, int id)
+  {
+    visualization_msgs::Marker marker;
+
+    marker.type = visualization_msgs::Marker::CUBE;
+    marker.header.frame_id = "world";
+
+    marker.scale.x = scale(0);
+    marker.scale.y = scale(1);
+    marker.scale.z = scale(2);
+
+    marker.color.r = 1.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
+    marker.color.a = 0.2;
+
+    marker.pose.position.x = translation(0);
+    marker.pose.position.y = translation(1);
+    marker.pose.position.z = translation(2);
+
+    marker.pose.orientation.x = q.x();
+    marker.pose.orientation.y = q.y();
+    marker.pose.orientation.z = q.z();
+    marker.pose.orientation.w = q.w();
+
+    topo_sample_pub.publish(marker);
+  }
   void PlanningVisualization::displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id /* = Eigen::Vector4d(0.5,0.5,0,1)*/)
   {
 
@@ -301,42 +330,67 @@ using std::endl;
     pub.publish(array);
   }
 
-  void PlanningVisualization::displayControlPoints(const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
+  void PlanningVisualization::displayControlPoints(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
   {
-    visualization_msgs::Marker mk;
-    mk.header.frame_id = "world";
-    mk.header.stamp    = ros::Time::now();
-    mk.type            = visualization_msgs::Marker::SPHERE_LIST;
-    mk.action          = visualization_msgs::Marker::DELETE;
-    mk.id              = id;
+    visualization_msgs::Marker sphere;
+    sphere.header.frame_id = "world";
+    sphere.header.stamp = ros::Time::now();
+    sphere.type = visualization_msgs::Marker::SPHERE_LIST;
+    sphere.action = visualization_msgs::Marker::ADD;
+    sphere.id = id;
 
-    mk.action = visualization_msgs::Marker::ADD;  
-    mk.pose.orientation.x = 0.0;
-    mk.pose.orientation.y = 0.0;
-    mk.pose.orientation.z = 0.0;
-    mk.pose.orientation.w = 1.0;
-  
-    mk.color.r = color(0);
-    mk.color.g = color(1);
-    mk.color.b = color(2);
-    mk.color.a = color(3);
-
-    mk.scale.x = scale;
-    mk.scale.y = scale;
-    mk.scale.z = scale;
+    sphere.pose.orientation.w = 1.0;
+    sphere.color.r = color(0);
+    sphere.color.g = color(1);
+    sphere.color.b = color(2);
+    sphere.color.a = color(3);
+    sphere.scale.x = scale;
+    sphere.scale.y = scale;
+    sphere.scale.z = scale;
 
     geometry_msgs::Point pt;
-    for (int i = 0; i < int(list.size()); i++) {
+    for(int i=0; i < int(list.size());i++)
+    {
       pt.x = list[i](0);
       pt.y = list[i](1);
       pt.z = list[i](2);
-      mk.points.push_back(pt);
+
+      sphere.points.push_back(pt);
     }
-    control_point_pub.publish(mk);
-    ros::Duration(0.001).sleep();
 
-
-
+    pub.publish(sphere);
   } 
+
+  void PlanningVisualization::displayMultiInitControlPoints(vector<vector<Eigen::Vector3d>> &init_ctrl, const double scale)
+  {
+    if(init_control_pub.getNumSubscribers() == 0)
+    {
+      return ;
+    }
+
+    static int last_ctrl_nums = 0;
+    for(int id = 0; id < last_ctrl_nums; id++)
+    {
+      Eigen::Vector4d color(0,0,0,0);
+      vector<Eigen::Vector3d> blank;
+      displayControlPoints(init_control_pub,blank,scale,color,id);
+      ros::Duration(0.001).sleep();
+    }
+    last_ctrl_nums = 0;
+
+    for(int id=0; id < init_ctrl.size();id++)
+    {
+      if(id >= colorMap.size())
+      {
+        ROS_WARN("display out of color map size ");
+        id = colorMap.size() - 1;
+      }
+      Eigen::Vector4d color(0,0,1,0.7);
+      // Eigen::Vector4d color = colorMap[id];
+      displayControlPoints(init_control_pub,init_ctrl[id],scale,color,id);
+      ros::Duration(0.001).sleep();
+      last_ctrl_nums++;
+    }
+  }
   
   // PlanningVisualization::

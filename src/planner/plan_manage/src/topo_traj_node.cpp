@@ -74,17 +74,17 @@ void waypointCallback(const geometry_msgs::PoseStampedConstPtr &msg)
     //     return ;
     // }
 
-    bool success = planner_manager_->reboundTest(odom_pos_, odom_vel_, odom_acc_, end_pt, Eigen::Vector3d::Zero(), false , false);
-    if(success)
-    {
-        ROS_INFO("Topo replan success");
-        /*** display ***/
-    }
-    else
-    {
-        ROS_ERROR("Topo replan failed");
-        return ;
-    }
+    // bool success = planner_manager_->reboundTest(odom_pos_, odom_vel_, odom_acc_, end_pt, Eigen::Vector3d::Zero(), false , false);
+    // if(success)
+    // {
+    //     ROS_INFO("Topo replan success");
+    //     /*** display ***/
+    // }
+    // else
+    // {
+    //     ROS_ERROR("Topo replan failed");
+    //     return ;
+    // }
 
 
 }

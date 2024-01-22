@@ -17,7 +17,6 @@
         <param name="map/frame_id"     value="world" />
         <param name="map/seed" value="5"/>
         <param name="map/obs_num"    value="30"/>
-    
         <param name="obstacle/upper_vel" value="0.8"/>
 
         <param name="aabb/lower_x" value="0.5"/>

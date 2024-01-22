@@ -14,9 +14,11 @@ particle_map:
   local_update_range_x: 5
   local_update_range_y: 5
   local_update_range_z: 1.5
-  inf_grid: 2
+  inf_grid: 1
   enable_virtual_wall: true
-  virtual_ceil: 2.0
+
+  virtual_ceil: 3.0
+
   virtual_ground: -0.1
   ground_height: 0.01
   fov_horizontal_lowbound: -180
@@ -24,7 +26,7 @@ particle_map:
   fov_vertical_lowbound: -50
   fov_vertical_upbound: 50
   occupancy_thresh: 0.6
-  risk_thresh: 0.05
+  risk_thresh: 0.15
   risk_point_gate: 10
   enable_future_prediction: false
   dynamic_cluster_max_center_height: 20.0

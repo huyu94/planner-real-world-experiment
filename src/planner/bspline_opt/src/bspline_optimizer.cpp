@@ -929,7 +929,6 @@ bool BsplineOptimizer::rebound_optimize(double &final_cost)
             {
                 Eigen::Vector3d pt = traj.evaluateDeBoorT(t);
                 flag_occ = dsp_map_->getInflateOccupancy(pt) || dsp_map_->getVoxelFutureDangerous(pt);
-                // flag_occ = dsp_map_->getInflateOccupancy(pt);
                 if (flag_occ)
                 {
                     // cout << "hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;

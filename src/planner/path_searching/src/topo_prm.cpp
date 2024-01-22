@@ -118,9 +118,9 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
 
     graph_.push_back(start_node);
     graph_.push_back(end_node);
-  
+
     /* 确定一个采样空间， 一个椭球体的长度和姿态*/
-    
+
     // sample region
     sample_r_(0) = 0.5 * (end - start).norm() + sample_inflate_(0); // x-axis length
     sample_r_(1) = sample_inflate_(1); // y-axis length 
@@ -137,7 +137,7 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
     rotation_.col(0) = xtf;
     rotation_.col(1) = ytf;
     rotation_.col(2) = ztf;
-
+    
     int node_id = 1;
 
 
@@ -189,7 +189,7 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
         sample_time += (ros::Time::now() - t1).toSec();
     }
       /* print record */
-    std::cout << "[Topo]: sample num: " << sample_num;
+    // std::cout << "[Topo]: sample num: " << sample_num;
 
     /* 修剪，缩短路径 */
     pruneGraph();
@@ -794,3 +794,10 @@ void TopoPRM::depthFirstSearch(vector<GraphNode::Ptr>& vis)
 
 }
 
+
+void TopoPRM::getBox(Eigen::Vector3d &pt, Eigen::Vector3d &scale, Eigen::Quaterniond &quat)
+{
+    pt = translation_;
+    scale = sample_r_;
+    quat = rotation_;
+}

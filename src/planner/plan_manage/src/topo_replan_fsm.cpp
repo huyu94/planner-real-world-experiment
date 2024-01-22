@@ -321,11 +321,11 @@ void TopoReplanFSM::execFSMCallback(const ros::TimerEvent &e)
             changeFSMExecState(WAIT_TARGET, "FSM");
             return;
         }
-        else if ((end_pt_ - pos).norm() < no_replan_thresh_)
+        else if ((end_pt_ - pos).norm() < no_replan_thresh_) // 接近终点
         {
             return;
         }
-        else if ((info->start_pos_ - pos).norm() < replan_thresh_)
+        else if ((info->start_pos_ - pos).norm() < replan_thresh_) // 接近起点
         {
             // cout << "near start" << endl;
             return;

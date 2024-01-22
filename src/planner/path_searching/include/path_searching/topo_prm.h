@@ -87,7 +87,7 @@ private:
 
     bool parallel_shortcut_; // 是否并行减枝
 
-
+    
     /* create topological roadmap */
     /* path searching, shortening, pruning and merging */
     std::list<GraphNode::Ptr> createGraph(Eigen::Vector3d start, Eigen::Vector3d end);
@@ -133,6 +133,7 @@ public:
 
     void setEnvironment(const DspMap::Ptr dsp_map);
 
+    void getBox(Eigen::Vector3d &pt, Eigen::Vector3d &scale, Eigen::Quaterniond &quat);
     void findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end, std::vector<Eigen::Vector3d> start_pts,
                         std::vector<Eigen::Vector3d> end_pts, std::list<GraphNode::Ptr>& graph,
                         std::vector<std::vector<Eigen::Vector3d>>& raw_paths,

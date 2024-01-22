@@ -53,17 +53,20 @@ public:
 
     void initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis = NULL);
 
+
     void sortTopoTrajs(std::vector<UniformBspline> &trajs);
     double getTrajRisk(UniformBspline &traj);
     double getTrajRisk(Eigen::MatrixXd &ctrl_pts);
+    double calcTrajCost(UniformBspline &traj);
 
+    void drawSampleBox();
 
     PlanParameters pp_;
     LocalTrajData local_data_;
     GlobalTrajData global_data_;
     // TopoTrajData topo_data_;
     MidPlanData plan_data_;
-
+    
     DspMap::Ptr dsp_map_;
 
 
@@ -80,7 +83,7 @@ private:
     unique_ptr<TopoPRM> topo_prm_;
     // BsplineOptimizer::Ptr bspline_optimizer_rebound_;
     std::vector<BsplineOptimizer::Ptr> bspline_optimizer_rebound_;
-
+    
     int continuous_failures_count_{0};
 
 

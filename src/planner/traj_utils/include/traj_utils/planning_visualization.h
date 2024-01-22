@@ -27,7 +27,10 @@ using std::vector;
     ros::Publisher a_star_list_pub;
     ros::Publisher guide_vector_pub;
     ros::Publisher intermediate_state_pub;
-    ros::Publisher control_point_pub;
+    // ros::Publisher control_point_pub; // 
+    ros::Publisher init_control_pub;
+    ros::Publisher topo_sample_pub; // 采样空间展示
+
 
     std::vector<Eigen::Vector4d> colorMap;
 
@@ -49,13 +52,15 @@ using std::vector;
     void displayGlobalPathList(vector<Eigen::Vector3d> global_pts, const double scale, int id);
     void displayInitPathList(vector<Eigen::Vector3d> init_pts, const double scale, int id);
     void displayMultiInitPathList(vector<vector<Eigen::Vector3d>> init_trajs, const double scale);
+    void displayMultiInitControlPoints(vector<vector<Eigen::Vector3d>> &init_ctrl, const double scale);
     void displayOptimalList(Eigen::MatrixXd optimal_pts, int id);
     void displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id);
     void displayArrowList(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
-    void displayControlPoints(const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
+    void displayControlPoints(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
     void displayBestPathList(Eigen::MatrixXd best_pts, int id);
 
     void displayTopoPathList(Eigen::MatrixXd topo_pts, int id);
+    void displayTopoSampleBox(Eigen::Vector3d translation, Eigen::Vector3d scale, Eigen::Quaterniond q, int id);
 
     // void drawTopoGraph(list<GraphNode::Ptr>& graph, double point size, double line_width,
     //                     const Eigen::Vector4d& color1, const )

@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
   // ros::Duration(1.0).sleep();
   
-  ros::MultiThreadedSpinner spinner(8);
+  ros::MultiThreadedSpinner spinner(4);
   spinner.spin();
   // ros::AsyncSpinner async_spinner(4);
   // async_spinner.start();
