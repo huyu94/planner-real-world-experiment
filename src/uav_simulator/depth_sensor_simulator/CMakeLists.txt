@@ -4,8 +4,8 @@ SET(CMAKE_BUILD_TYPE Release) # Release, RelWithDebInfo
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ADD_COMPILE_OPTIONS(-std=c++14)
 
-# set(ENABLE_CUDA false)
-set(ENABLE_CUDA true)
+set(ENABLE_CUDA false)
+# set(ENABLE_CUDA true)
 
 if(ENABLE_CUDA)
   find_package(CUDA REQUIRED)

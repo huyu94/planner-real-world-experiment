@@ -5,7 +5,7 @@
 			
 			<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
 			<!-- <remap from="~odom" to="/Odometry"/> -->
-		<remap from="/robot/dlio/odom_node/odom"/>
+			<remap from="~odom" to="/robot/dlio/odom_node/odom"/>
 			
 		<remap from="~cmd" to="/position_cmd" />
 
