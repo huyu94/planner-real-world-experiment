@@ -89,8 +89,8 @@
         <param name="manager/feasibility_tolerance" value="0.05" type="double" />
         <param name="manager/planning_horizon" value="$(arg planning_horizon)" type="double" />
 
-        <param name="manager/risk_weight" value="10000.0" />
-        <param name="manager/traj_risk_thresh" value="15.0" />
+        <param name="manager/risk_weight" value="1000.0" />
+        <param name="manager/traj_risk_thresh" value="5.0" />
 
 
         <!-- topo prm -->

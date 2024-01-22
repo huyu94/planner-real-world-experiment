@@ -928,7 +928,7 @@ bool BsplineOptimizer::rebound_optimize(double &final_cost)
             for (double t = tm; t < tmp * 2 / 3; t += t_step) // Only check the closest 2/3 partition of the whole trajectory.
             {
                 Eigen::Vector3d pt = traj.evaluateDeBoorT(t);
-                flag_occ = dsp_map_->getInflateOccupancy(pt) || dsp_map_->getVoxelFutureDangerous(pt);
+                flag_occ = dsp_map_->getInflateOccupancy(pt);
                 if (flag_occ)
                 {
                     // cout << "hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;
@@ -947,6 +947,7 @@ bool BsplineOptimizer::rebound_optimize(double &final_cost)
                 }
             }
 
+            
             if (!flag_occ)
             {
                 printf("\033[32miter(+1)=%d,time(ms)=%5.3f,total_t(ms)=%5.3f,cost=%5.3f\n\033[0m", iter_num_, time_ms, total_time_ms, final_cost);
@@ -954,11 +955,13 @@ bool BsplineOptimizer::rebound_optimize(double &final_cost)
             }
             else // restart
             {
-                restart_nums++;
-                initControlPoints(cps_.points, false);
-                new_lambda1_g_ *= 2;
-
-                printf("\033[32miter(+1)=%d,time(ms)=%5.3f,keep optimizing\n\033[0m", iter_num_, time_ms);
+                // restart_nums++;
+                // initControlPoints(cps_.points, false);
+                // new_lambda1_g_ *= 2;
+                printf("\33[32 topology start path maybe in the obstacle, this trajectory failed .\n\33[0m");
+                success = false;
+                flag_force_return = true;
+                // printf("\033[32miter(+1)=%d,time(ms)=%5.3f,keep optimizing\n\033[0m", iter_num_, time_ms);
             }
         }
         else if (result == lbfgs::LBFGSERR_CANCELED)
@@ -973,7 +976,7 @@ bool BsplineOptimizer::rebound_optimize(double &final_cost)
             // while (ros::ok());
         }
 
-    } while ((flag_occ && restart_nums < MAX_RESART_NUMS_SET) ||
+    } while (/*(flag_occ && restart_nums < MAX_RESART_NUMS_SET) ||*/
              (flag_force_return && force_stop_type_ == STOP_FOR_REBOUND && rebound_times <= 20));
 
     return success;

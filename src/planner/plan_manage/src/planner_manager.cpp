@@ -259,7 +259,7 @@ bool PlannerManager::reboundReplan(     Eigen::Vector3d start_pt, Eigen::Vector3
         guide_pts.pop_back();
         guide_pts.pop_back();
         guide_pts.erase(guide_pts.begin(),guide_pts.begin() + 2);
-        if (guide_pts[i].size() != int(temp_ctrl_pts.cols()) - 6)
+        if (guide_pts.size() != int(temp_ctrl_pts.cols()) - 6)
         {
             ROS_WARN("what guide");
             ROS_WARN("guide_pts size : %d", guide_pts[i].size());
