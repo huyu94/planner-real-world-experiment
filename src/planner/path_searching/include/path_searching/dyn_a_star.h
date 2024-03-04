@@ -5,7 +5,8 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <Eigen/Eigen>
-#include <plan_env/dsp_map.h>
+#include <plan_env/static/grid_map.h>
+#include <plan_env/pos_checker.h>
 #include <queue>
 
 constexpr double inf = 1 >> 20;
@@ -41,12 +42,11 @@ public:
 	}
 };
 
-class Astar
+class AStar
 {
 private:
 	// GridMap::Ptr grid_map_;
-	// DspMap::Ptr dsp_map_;
-	DspMap::Ptr dsp_map_;
+	PosChecker::Ptr pos_checker_;
 
 	inline void coord2gridIndexFast(const double x, const double y, const double z, int &id_x, int &id_y, int &id_z);
 
@@ -62,7 +62,7 @@ private:
 
 	//bool (*checkOccupancyPtr)( const Eigen::Vector3d &pos );
 
-	inline bool checkOccupancy(const Eigen::Vector3d &pos) { return (dsp_map_->getInflateOccupancy(pos) || dsp_map_->getVoxelFutureDangerous(pos)); }
+	inline bool checkOccupancy(const Eigen::Vector3d &pos) { return (bool)pos_checker_->checkCollisionInGridMap(pos); }
 
 	std::vector<GridNodePtr> retrievePath(GridNodePtr current);
 
@@ -79,31 +79,29 @@ private:
 	int rounds_{0};
 
 public:
-	typedef std::shared_ptr<Astar> Ptr;
+	typedef std::shared_ptr<AStar> Ptr;
 
-	Astar(){};
-	~Astar();
+	AStar(){};
+	~AStar();
 
-	void initGridMap(DspMap::Ptr occ_map, const Eigen::Vector3i pool_size);
-
-	// void initGridMap(GridMap::Ptr occ_map, const Eigen::Vector3i pool_size);
+	void initPosChecker(PosChecker::Ptr pos_checker, const Eigen::Vector3i pool_size);
 
 	bool AstarSearch(const double step_size, Eigen::Vector3d start_pt, Eigen::Vector3d end_pt);
 
 	std::vector<Eigen::Vector3d> getPath();
 };
 
-inline double Astar::getHeu(GridNodePtr node1, GridNodePtr node2)
+inline double AStar::getHeu(GridNodePtr node1, GridNodePtr node2)
 {
 	return tie_breaker_ * getDiagHeu(node1, node2);
 }
 
-inline Eigen::Vector3d Astar::Index2Coord(const Eigen::Vector3i &index) const
+inline Eigen::Vector3d AStar::Index2Coord(const Eigen::Vector3i &index) const
 {
 	return ((index - CENTER_IDX_).cast<double>() * step_size_) + center_;
 };
 
-inline bool Astar::Coord2Index(const Eigen::Vector3d &pt, Eigen::Vector3i &idx) const
+inline bool AStar::Coord2Index(const Eigen::Vector3d &pt, Eigen::Vector3i &idx) const
 {
 	idx = ((pt - center_) * inv_step_size_ + Eigen::Vector3d(0.5, 0.5, 0.5)).cast<int>() + CENTER_IDX_;
 

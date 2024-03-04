@@ -1,5 +1,6 @@
-#include <path_searching/topo_prm.h>
+#include "path_searching/topo_prm.h"
 #include <thread>
+
 
 
 
@@ -31,9 +32,11 @@ void TopoPRM::init(const ros::NodeHandle& nh)
     nh.param("topo_prm/parallel_shortcut", parallel_shortcut_, false);
 
     // nh.param("topo_prm/risk_thresh", risk_thresh_, 0.5);
-    resolution_ = dsp_map_->getResolution();
+    // resolution_ = dsp_map_->getResolution();
+    resolution_ = pos_checker_->getResolution();
     
-    offset_ = Eigen::Vector3d(0.5, 0.5, 0.5) - dsp_map_->getOrigin() / resolution_;
+    // offset_ = Eigen::Vector3d(0.5, 0.5, 0.5) - dsp_map_->getOrigin() / resolution_;
+    // offset_ = Eigen::Vector3d(0.5,0.5,0.5) 
     
     for (int i = 0; i < max_raw_path_; ++i) {
         casters_.push_back(RayCaster());
@@ -41,10 +44,15 @@ void TopoPRM::init(const ros::NodeHandle& nh)
     ROS_INFO("Topo prm init done");
 }
 
-void TopoPRM::setEnvironment(DspMap::Ptr occ_map)
+void TopoPRM::setPosChecker(PosChecker::Ptr pos_checker)
 {
-    dsp_map_ = occ_map;
+    pos_checker_ = pos_checker;
 }
+
+// void TopoPRM::setEnvManager(EnvManager::Ptr env_manager)
+// {
+//     env_manager_ = env_manager;
+// }
 
 void TopoPRM::findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end,
                                 vector<Eigen::Vector3d> start_pts, vector<Eigen::Vector3d> end_pts,
@@ -61,8 +69,9 @@ void TopoPRM::findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end,
     start_pts_ = start_pts;
     end_pts_ = end_pts;
 
+    // ROS_INFO("create graph start");
     graph = createGraph(start, end);
-    ROS_INFO("create graph finished");
+    // ROS_INFO("create graph finished");
     graph_time = (ros::Time::now() - t1).toSec();
     cout << "create graph: " << (t2 - t1).toSec() << endl;
     /* ---------- search paths in the graph ---------- */
@@ -108,9 +117,18 @@ void TopoPRM::findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end,
 
 list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d end)
 {
-    static int count = 0;
-    std::cout << endl
-            << "[create graph]: -------------------------------------" << count++ << std::endl;
+    // static int count = 0;
+    // std::cout << endl
+    //         << "[create graph]: -------------------------------------" << count++ << std::endl;
+
+    if(pos_checker_->checkCollisionInSlideBox(start))
+    {  
+        cout << "start in collision" << endl;
+    }
+    if(pos_checker_->checkCollisionInSlideBox(end))
+    {
+        cout << "end in collision " << endl;
+    }
     graph_.clear();
     
     GraphNode::Ptr start_node = GraphNode::Ptr(new GraphNode(start, GraphNode::Guard, 0));
@@ -152,7 +170,8 @@ list<GraphNode::Ptr> TopoPRM::createGraph(Eigen::Vector3d start, Eigen::Vector3d
 
         pt = getSample();
         ++sample_num;
-        if(dsp_map_->getInflateOccupancy(pt) || dsp_map_->getVoxelFutureDangerous(pt))
+
+        if(pos_checker_->checkCollisionInSlideBox(pt))
         {
             sample_time += (ros::Time::now() - t1).toSec();
             continue;
@@ -240,7 +259,7 @@ bool TopoPRM::needConnection(GraphNode::Ptr g1, GraphNode::Ptr g2, Eigen::Vector
     {
         for(size_t j=0; j < g2->neighbors_.size();j++)
         {
-            if(g1->neighbors_[i]->id_ == g2->neighbors_[j]->id_)
+            if(g1->neighbors_[i]->id_ == g2->neighbors_[j]->id_) // 如果g1和g2 有相同的邻居
             {
                 path2[1] = g1->neighbors_[i]->pos_;
                 bool same_topo = sameTopoPath(path1, path2, 0.0);
@@ -270,19 +289,52 @@ Eigen::Vector3d TopoPRM::getSample()
     return pt;
 }
 
-bool TopoPRM::lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Eigen::Vector3d& pc, int caster_id)
+bool TopoPRM::lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Eigen::Vector3d& pc, int &object_id, Vector3d &object_pos, int caster_id)
 {
     Eigen::Vector3d ray_pt;
-    Eigen::Vector3i pt_id;
-    double risk;
+    // Eigen::Vector3i pt_id;
 
     casters_[caster_id].setInput(p1 / resolution_, p2 /resolution_);
     while(casters_[caster_id].step(ray_pt))
     {
-        pt_id(0) = ray_pt(0) + offset_(0);
-        pt_id(1) = ray_pt(1) + offset_(1);
-        pt_id(2) = ray_pt(2) + offset_(2);
-        if((dsp_map_->getInflateOccupancy(pt_id)) || dsp_map_->getVoxelFutureDangerous(pt_id))
+        Vector3d tmp = (ray_pt + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+
+        // pt_id = (ray_pt + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(0) = (ray_pt(0) + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(1) = (ray_pt(1) + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(2) = (ray_pt(2) + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(0) = ray_pt(0) + offset_(0);
+        // pt_id(1) = ray_pt(1) + offset_(1);
+        // pt_id(2) = ray_pt(2) + offset_(2);
+        // int collision_id;
+        
+        if(pos_checker_->checkCollisionInSlideBox(tmp)) // 占据
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool TopoPRM::lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Eigen::Vector3d& pc, int caster_id)
+{
+    Eigen::Vector3d ray_pt;
+
+    casters_[caster_id].setInput(p1 / resolution_, p2 /resolution_);
+    while(casters_[caster_id].step(ray_pt))
+    {
+        Vector3d tmp = (ray_pt ) * resolution_;
+
+        // pt_id = (ray_pt + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(0) = (ray_pt(0) + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(1) = (ray_pt(1) + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(2) = (ray_pt(2) + Eigen::Vector3d(0.5,0.5,0.5)) * resolution_;
+        // pt_id(0) = ray_pt(0) + offset_(0);
+        // pt_id(1) = ray_pt(1) + offset_(1);
+        // pt_id(2) = ray_pt(2) + offset_(2);
+        // int collision_id;
+
+        if(pos_checker_->checkCollisionInSlideBox(tmp)) // 占据
         {
             return false;
         }
@@ -431,6 +483,8 @@ bool TopoPRM::sameTopoPath(const vector<Eigen::Vector3d>& path1,const vector<Eig
     vector<Eigen::Vector3d> pts2 = discretizePath(path2, pt_num);
 
     Eigen::Vector3d pc;
+    int object_id;
+    Vector3d object_pos;
     for (int i = 0; i < pt_num; ++i) 
     {
         if (!lineVisib(pts1[i], pts2[i], pc)) 
@@ -536,7 +590,6 @@ void TopoPRM::shortcutPath(vector<Eigen::Vector3d> path, int path_id, int iter_n
             return ;
         }
 
-
         /* visibiliry path shortening */
 
         // Eigen::Vector3d last_pt, new_pt;
@@ -556,6 +609,7 @@ void TopoPRM::shortcutPath(vector<Eigen::Vector3d> path, int path_id, int iter_n
             
             dir = (dis_path[i] - short_path.back()).normalized();
             double min_cos = 1000.0;
+            int min_id = -1;
             for(int j = last_dis_id; j < i; j++)
             {
                 temp_dir = (dis_path[j] - short_path.back()).normalized();
@@ -563,21 +617,13 @@ void TopoPRM::shortcutPath(vector<Eigen::Vector3d> path, int path_id, int iter_n
                 if(cos < min_cos)
                 {
                     min_cos = cos;
-                    last_dis_id = j;
+                    min_id = j;
                 }
             }
+            last_dis_id = min_id;
             push_dir = temp_dir;
-            colli_pt = colli_pt + resolution_ * push_dir;
-
-            // risk = dsp_map_->getVoxelFutureRisk(colli_pt);
-            // edt_environment_->evaluateEDTWithGrad(colli_pt, -1, dist, grad);
-            // if (grad.norm() > 1e-3) {
-            //     grad.normalize();
-            //     dir = (dis_path[i] - short_path.back()).normalized();
-            //     push_dir = grad - grad.dot(dir) * dir;
-            //     push_dir.normalize();
-            //     colli_pt = colli_pt + resolution_ * push_dir;
-            // }
+            colli_pt = colli_pt + resolution_ * push_dir; 
+            
             short_path.push_back(colli_pt);            
         }
         short_path.push_back(dis_path.back()); // 最后加上末尾点

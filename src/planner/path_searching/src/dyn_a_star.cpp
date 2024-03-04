@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Eigen;
 
-Astar::~Astar()
+AStar::~AStar()
 {
     for (int i = 0; i < POOL_SIZE_(0); i++)
         for (int j = 0; j < POOL_SIZE_(1); j++)
@@ -11,7 +11,7 @@ Astar::~Astar()
                 delete GridNodeMap_[i][j][k];
 }
 
-void Astar::initGridMap(DspMap::Ptr occ_map, const Eigen::Vector3i pool_size)
+void AStar::initPosChecker(PosChecker::Ptr pos_checker, const Eigen::Vector3i pool_size)
 {
     POOL_SIZE_ = pool_size;
     CENTER_IDX_ = pool_size / 2;
@@ -30,33 +30,11 @@ void Astar::initGridMap(DspMap::Ptr occ_map, const Eigen::Vector3i pool_size)
         }
     }
 
-    dsp_map_ = occ_map;
+    pos_checker_ = pos_checker;
 }
 
 
-// void Astar::initGridMap(DspMap::Ptr occ_map, const Eigen::Vector3i pool_size)
-// {
-//     POOL_SIZE_ = pool_size;
-//     CENTER_IDX_ = pool_size / 2;
-
-//     GridNodeMap_ = new GridNodePtr **[POOL_SIZE_(0)];
-//     for (int i = 0; i < POOL_SIZE_(0); i++)
-//     {
-//         GridNodeMap_[i] = new GridNodePtr *[POOL_SIZE_(1)];
-//         for (int j = 0; j < POOL_SIZE_(1); j++)
-//         {
-//             GridNodeMap_[i][j] = new GridNodePtr[POOL_SIZE_(2)];
-//             for (int k = 0; k < POOL_SIZE_(2); k++)
-//             {
-//                 GridNodeMap_[i][j][k] = new GridNode;
-//             }
-//         }
-//     }
-
-//     dsp_map_ = occ_map;
-// }
-
-double Astar::getDiagHeu(GridNodePtr node1, GridNodePtr node2)
+double AStar::getDiagHeu(GridNodePtr node1, GridNodePtr node2)
 {
     double dx = abs(node1->index(0) - node2->index(0));
     double dy = abs(node1->index(1) - node2->index(1));
@@ -83,7 +61,7 @@ double Astar::getDiagHeu(GridNodePtr node1, GridNodePtr node2)
     return h;
 }
 
-double Astar::getManhHeu(GridNodePtr node1, GridNodePtr node2)
+double AStar::getManhHeu(GridNodePtr node1, GridNodePtr node2)
 {
     double dx = abs(node1->index(0) - node2->index(0));
     double dy = abs(node1->index(1) - node2->index(1));
@@ -92,12 +70,12 @@ double Astar::getManhHeu(GridNodePtr node1, GridNodePtr node2)
     return dx + dy + dz;
 }
 
-double Astar::getEuclHeu(GridNodePtr node1, GridNodePtr node2)
+double AStar::getEuclHeu(GridNodePtr node1, GridNodePtr node2)
 {
     return (node2->index - node1->index).norm();
 }
 
-vector<GridNodePtr> Astar::retrievePath(GridNodePtr current)
+vector<GridNodePtr> AStar::retrievePath(GridNodePtr current)
 {
     vector<GridNodePtr> path;
     path.push_back(current);
@@ -111,14 +89,14 @@ vector<GridNodePtr> Astar::retrievePath(GridNodePtr current)
     return path;
 }
 
-bool Astar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d end_pt, Vector3i &start_idx, Vector3i &end_idx)
+bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d end_pt, Vector3i &start_idx, Vector3i &end_idx)
 {
     if (!Coord2Index(start_pt, start_idx) || !Coord2Index(end_pt, end_idx))
         return false;
 
     if (checkOccupancy(Index2Coord(start_idx)))
     {
-        //ROS_WARN("Start point is insdide an obstacle.");
+        ROS_WARN("Start point is insdide an obstacle.");
         do
         {
             start_pt = (start_pt - end_pt).normalized() * step_size_ + start_pt;
@@ -129,7 +107,7 @@ bool Astar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d en
 
     if (checkOccupancy(Index2Coord(end_idx)))
     {
-        //ROS_WARN("End point is insdide an obstacle.");
+        ROS_WARN("End point is insdide an obstacle.");
         do
         {
             end_pt = (end_pt - start_pt).normalized() * step_size_ + end_pt;
@@ -141,7 +119,7 @@ bool Astar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d en
     return true;
 }
 
-bool Astar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_pt)
+bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_pt)
 {
     ros::Time time_1 = ros::Time::now();
     ++rounds_;
@@ -271,7 +249,7 @@ bool Astar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
     return false;
 }
 
-vector<Vector3d> Astar::getPath()
+vector<Vector3d> AStar::getPath()
 {
     vector<Vector3d> path;
 
