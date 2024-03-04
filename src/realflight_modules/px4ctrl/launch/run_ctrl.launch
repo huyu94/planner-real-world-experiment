@@ -7,7 +7,8 @@
 			<!-- <remap from="~odom" to="/Odometry"/> -->
 			<remap from="~odom" to="/robot/dlio/odom_node/odom"/>
 			
-		<remap from="~cmd" to="/position_cmd" />
+		<!-- <remap from="~cmd" to="/position_cmd" /> -->
+		<remap from="~cmd" to="drone_0/planning/pos_cmd"/>
 
         <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
 	</node>
