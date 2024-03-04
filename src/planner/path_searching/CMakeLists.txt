@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 2.8.3)
 project(path_searching)
 
 set(CMAKE_BUILD_TYPE "Release")
+ADD_COMPILE_OPTIONS(-std=c++11 )
 ADD_COMPILE_OPTIONS(-std=c++14 )
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
-# set(cv_bridge_DIR /usr/local/share/cv_bridge/cmake)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -16,9 +16,11 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   plan_env
   cv_bridge
-  traj_utils
 )
-
+include_directories(/usr/local/include/munkres)
+set(MunkresLIB
+        /usr/local/lib/libmunkres.a
+        )
 
 catkin_package(
  INCLUDE_DIRS include
@@ -27,10 +29,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-include_directories(/usr/local/include/munkres)
-set(MunkresLIB
-        /usr/local/lib/libmunkres.a
-        )
 include_directories( 
     SYSTEM 
     include 
@@ -46,4 +44,3 @@ add_library( path_searching
 target_link_libraries( path_searching
     ${catkin_LIBRARIES} 
     )  
-

@@ -18,18 +18,16 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   traj_utils
   path_searching
+  obj_predictor
 )
 
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES bspline_opt
-  CATKIN_DEPENDS plan_env 
+ INCLUDE_DIRS include
+ LIBRARIES bspline_opt
+ CATKIN_DEPENDS plan_env obj_predictor
 #  DEPENDS system_lib
 )
-include_directories(/usr/local/include/munkres)
-set(MunkresLIB
-        /usr/local/lib/libmunkres.a
-        )
+
 include_directories( 
     SYSTEM 
     include 

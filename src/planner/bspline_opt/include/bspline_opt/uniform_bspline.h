@@ -7,6 +7,8 @@
 
 using namespace std;
 
+namespace ego_planner
+{
   // An implementation of non-uniform B-spline with different dimensions
   // It also represents uniform B-spline which is a special case of non-uniform
   class UniformBspline
@@ -31,7 +33,7 @@ using namespace std;
     UniformBspline(const Eigen::MatrixXd &points, const int &order, const double &interval);
     ~UniformBspline();
 
-    // Eigen::MatrixXd getControlPoints(void) { return control_points_; }
+    Eigen::MatrixXd get_control_points(void) { return control_points_; }
 
     // initialize as an uniform B-spline
     void setUniformBspline(const Eigen::MatrixXd &points, const int &order, const double &interval);
@@ -74,4 +76,5 @@ using namespace std;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
+} // namespace ego_planner
 #endif
